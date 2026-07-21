@@ -1,16 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-import EndProfileView from '../views/EndProfileView.vue';
-import WillWizard from '../components/pages/WillWizard.vue';
-import CohabitationWizard from '../components/pages/CohabitationWizard.vue';
-import GuardianshipWizard from '../components/pages/GuardianshipWizard.vue';
-import JointPurchaseWizard from '../components/pages/JointPurchaseWizard.vue';
-import LifeAuthorizationWizard from '../components/pages/LifeAuthorizationWizard.vue';
-import MonthlyLoanCalculator from '../components/pages/MonthlyLoanCalculator.vue';
-import Login from '../components/pages/Login.vue';
-import Register from '../components/pages/Register.vue';
-import ForgotPassword from '../components/pages/ForgotPassword.vue';
 import store from '../store';
+
+const EndProfileView = () => import('../views/EndProfileView.vue');
+const WillWizard = () => import('../components/pages/WillWizard.vue');
+const CohabitationWizard = () => import('../components/pages/CohabitationWizard.vue');
+const GuardianshipWizard = () => import('../components/pages/GuardianshipWizard.vue');
+const JointPurchaseWizard = () => import('../components/pages/JointPurchaseWizard.vue');
+const LifeAuthorizationWizard = () => import('../components/pages/LifeAuthorizationWizard.vue');
+const MonthlyLoanCalculator = () => import('../components/pages/MonthlyLoanCalculator.vue');
+const Login = () => import('../components/pages/Login.vue');
+const Register = () => import('../components/pages/Register.vue');
+const ForgotPassword = () => import('../components/pages/ForgotPassword.vue');
 
 const routes = [
     { path: '/', name: 'home', component: HomeView, meta: { requiresAuth: true } },

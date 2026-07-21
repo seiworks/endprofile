@@ -17,10 +17,21 @@ export async function resetPassword(payload) {
     return response.data;
 }
 
-export function setAuthToken(token) {
-    if (token) {
-        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-        delete axios.defaults.headers.common.Authorization;
-    }
+export async function getRecoveryChallenge(email) {
+    const response = await axios.post('/api/auth/recovery-challenge', { email }, { timeout: AUTH_TIMEOUT_MS });
+    return response.data;
+}
+
+export async function logout() {
+    await axios.post('/api/auth/logout');
+}
+
+export async function initializeVault(vaultMetadata) {
+    const response = await axios.patch('/api/users/vault', { vaultMetadata }, { timeout: AUTH_TIMEOUT_MS });
+    return response.data;
+}
+
+export async function getCurrentUser() {
+    const response = await axios.get('/api/users/me', { timeout: AUTH_TIMEOUT_MS });
+    return response.data;
 }

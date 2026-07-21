@@ -1,0 +1,10 @@
+.git
+.env
+**/.env
+**/node_modules
+frontend/dist
+tmp
+output
+recoverykey-sei
+*.log
+AGENTS.md

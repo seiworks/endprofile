@@ -4,7 +4,8 @@
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
-        "smoke": "node scripts/smoke.js"
+        "smoke": "node scripts/smoke.js",
+        "test:security": "node scripts/security-integration.js && node scripts/http-security-smoke.js"
     },
     "keywords": [],
     "author": "",
@@ -15,8 +16,9 @@
         "cors": "^2.8.6",
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
+        "express-rate-limit": "^8.6.0",
+        "helmet": "^8.3.0",
         "jsonwebtoken": "^9.0.3",
-        "mongoose": "^8.19.4",
-        "pdfkit": "^0.17.2"
+        "mongoose": "^8.19.4"
     }
 }

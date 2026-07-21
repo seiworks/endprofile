@@ -1,22 +1,22 @@
 <template>
     <div class="wizard-container text-light">
         <teleport to="body">
-            <button v-if="showFloatingSave" type="button" class="save-button-position btn btn-outline-light btn-sm me-2"
+            <button v-if="showFloatingSave" type="button" class="save-button-position btn highlight-action-button"
                 :disabled="saving" @click="onSaveDraft">
                 <span v-if="saving">儲存中…</span>
                 <span v-else>儲存</span>
             </button>
         </teleport>
-        <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
+        <div class="wizard-header mb-3">
+            <div class="wizard-heading">
                 <h3 class="mb-1">共同購屋協議</h3>
                 <p class="mb-0">釐清共同出資買房時的權利義務與風險分擔。</p>
             </div>
-            <div class="text-end">
-                <p v-if="lastSavedText" class="mb-1 small text-light opacity-75">
+            <div class="wizard-actions">
+                <p v-if="lastSavedText" class="wizard-last-saved mb-1 small text-light opacity-75">
                     上次編輯：{{ lastSavedText }}
                 </p>
-                <div class="d-flex justify-content-end">
+                <div class="wizard-action-buttons">
                     <button type="button" class="btn btn-outline-light btn-sm me-2" :disabled="saving"
                         @click="onSaveDraft">
                         <span v-if="saving">儲存中…</span>
@@ -246,50 +246,36 @@
                                     </router-link>
                                 </div>
                                 <p class="small text-muted">方案與利率由負擔試算頁套用；每月負擔金額仍可手動調整。</p>
-                                <div class="rounded border border-light border-opacity-25 p-3 mb-3">
-                                    <div v-if="form.loanPlan === 'regular'"
-                                        class="d-flex flex-wrap align-items-end gap-3">
-                                        <span class="badge rounded-pill text-bg-light px-3 py-2">
-                                            一般首購
+                                <div class="loan-plan-summary mb-3">
+                                    <span class="loan-plan-badge">
+                                        {{ form.loanPlan === 'regular' ? '一般首購' : '新青安 3.0' }}
+                                    </span>
+                                    <span class="loan-summary-divider" />
+                                    <span class="loan-rate-item">尾差 1 元歸<strong>{{ form.loanRemainderRecipient === 'B' ? '乙方' : '甲方' }}</strong></span>
+                                    <template v-if="form.loanPlan === 'regular'">
+                                        <span class="loan-summary-divider" />
+                                        <span class="loan-rate-item">
+                                            適用年利率
+                                            <strong>{{ formatRate(form.regularLoanRate) }}%</strong>
                                         </span>
-                                        <div class="compact-rate-field">
-                                            <label class="form-label mb-0">適用年利率</label>
-                                            <div class="input-group">
-                                                <input :value="asNumber(form.regularLoanRate).toFixed(3)" type="text"
-                                                    class="form-control" readonly />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-else class="d-flex flex-wrap align-items-end gap-3">
-                                        <span class="badge rounded-pill text-bg-light px-3 py-2">
-                                            新青安 3.0
+                                    </template>
+                                    <template v-else>
+                                        <span class="loan-summary-divider" />
+                                        <span class="loan-rate-item">
+                                            前 3 年
+                                            <strong>{{ formatRate(form.youthPreferentialRate) }}%</strong>
                                         </span>
-                                        <div class="compact-rate-field">
-                                            <label class="form-label mb-0">前 3 年優惠利率</label>
-                                            <div class="input-group">
-                                                <input :value="asNumber(form.youthPreferentialRate).toFixed(3)" type="text"
-                                                    class="form-control" readonly />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="compact-rate-field">
-                                            <label class="form-label mb-0">完全退場後利率</label>
-                                            <div class="input-group">
-                                                <input :value="asNumber(form.youthOriginalRate).toFixed(3)" type="text"
-                                                    class="form-control" readonly />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="compact-rate-field">
-                                            <label class="form-label mb-0">搭配一般貸款年利率</label>
-                                            <div class="input-group">
-                                                <input :value="asNumber(form.generalLoanRate).toFixed(3)" type="text"
-                                                    class="form-control" readonly />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        <i class="mdi mdi-arrow-right loan-rate-arrow" />
+                                        <span class="loan-rate-item">
+                                            完全退場
+                                            <strong>{{ formatRate(form.youthOriginalRate) }}%</strong>
+                                        </span>
+                                        <span class="loan-summary-divider" />
+                                        <span class="loan-rate-item">
+                                            一般貸款
+                                            <strong>{{ formatRate(form.generalLoanRate) }}%</strong>
+                                        </span>
+                                    </template>
                                 </div>
                                 <div class="row g-2 mb-3">
                                     <div class="col-12">
@@ -400,7 +386,8 @@
 import { computed, reactive } from 'vue';
 import { useDocumentDraft } from '../../composables/useDocumentDraft';
 import { DOCUMENT_BY_KEY } from '../../constants/documents';
-import { LOAN_CALCULATOR_TRANSFER_KEY } from '../../constants/loanCalculator';
+import { consumeLoanCalculatorResult } from '../../services/loanTransfer';
+import { formatRate } from '../../services/loanCalculator';
 
 const documentMeta = DOCUMENT_BY_KEY.jointPurchase;
 
@@ -444,6 +431,7 @@ const form = reactive({
     youthPreferentialRate: 1.775,
     youthOriginalRate: 2.275,
     generalLoanRate: 2.2,
+    loanRemainderRecipient: 'A',
     ownership: '',
     loan: '',
     expenses: '',
@@ -488,16 +476,16 @@ const onMoneyInput = (key, event) => {
 };
 
 const applyLoanCalculatorResult = () => {
-    const raw = window.sessionStorage.getItem(LOAN_CALCULATOR_TRANSFER_KEY);
-    if (!raw) return;
+    const result = consumeLoanCalculatorResult();
+    if (!result) return;
     try {
-        const result = JSON.parse(raw);
         const assignNumberIfPresent = (key, value) => {
             if (value !== null && value !== undefined && Number.isFinite(Number(value))) {
                 form[key] = Number(value);
             }
         };
         form.loanPlan = result.loanPlan === 'youth' ? 'youth' : 'regular';
+        form.loanRemainderRecipient = result.remainderRecipient === 'B' ? 'B' : 'A';
         assignNumberIfPresent('regularLoanRate', result.regularLoanRate);
         assignNumberIfPresent('youthPreferentialRate', result.youthPreferentialRate);
         assignNumberIfPresent('youthOriginalRate', result.youthOriginalRate);
@@ -508,8 +496,6 @@ const applyLoanCalculatorResult = () => {
         form.monthlyLoanAfterExitB = asNumber(result.afterExitB);
     } catch (e) {
         console.error(e);
-    } finally {
-        window.sessionStorage.removeItem(LOAN_CALCULATOR_TRANSFER_KEY);
     }
 };
 
@@ -676,10 +662,10 @@ const previewText = computed(() => {
     const afterExitLoanTotal = asNumber(form.monthlyLoanAfterExitA) + asNumber(form.monthlyLoanAfterExitB);
     let loanBurdenText = '';
     if (form.loanPlan === 'regular' && firstYearLoanTotal > 0) {
-        loanBurdenText = `\n貸款方案：一般首購，適用年利率 ${asNumber(form.regularLoanRate).toFixed(3)}%。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元。實際金額仍以銀行核貸及計息結果為準。`;
+        loanBurdenText = `\n貸款方案：一般首購，適用年利率 ${formatRate(form.regularLoanRate)}%。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
     }
     if (form.loanPlan === 'youth' && (firstYearLoanTotal > 0 || afterExitLoanTotal > 0)) {
-        loanBurdenText = `\n貸款方案：新青安 3.0，前 3 年優惠年利率 ${asNumber(form.youthPreferentialRate).toFixed(3)}%，補貼完全退場後年利率 ${asNumber(form.youthOriginalRate).toFixed(3)}%，搭配之一般貸款年利率 ${asNumber(form.generalLoanRate).toFixed(3)}%。第一年每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；利息補貼完全退場後，甲方約新台幣 ${asNumber(form.monthlyLoanAfterExitA).toLocaleString('zh-TW')} 元、乙方約新台幣 ${asNumber(form.monthlyLoanAfterExitB).toLocaleString('zh-TW')} 元。實際金額仍以銀行核貸及計息結果為準。`;
+        loanBurdenText = `\n貸款方案：新青安 3.0，前 3 年優惠年利率 ${formatRate(form.youthPreferentialRate)}%，補貼完全退場後年利率 ${formatRate(form.youthOriginalRate)}%，搭配之一般貸款年利率 ${formatRate(form.generalLoanRate)}%。第一年每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；利息補貼完全退場後，甲方約新台幣 ${asNumber(form.monthlyLoanAfterExitA).toLocaleString('zh-TW')} 元、乙方約新台幣 ${asNumber(form.monthlyLoanAfterExitB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
     }
 
     const expensesText =
@@ -757,8 +743,51 @@ const {
 </script>
 
 <style scoped>
-.compact-rate-field {
-    width: 11.5rem;
-    max-width: 100%;
+.loan-plan-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-height: 3.25rem;
+    padding: 0.65rem 0.8rem;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 0.85rem;
+    background: rgba(22, 27, 48, 0.18);
+    white-space: nowrap;
+}
+
+.loan-plan-badge {
+    flex: 0 0 auto;
+    padding: 0.42rem 0.75rem;
+    border-radius: 999px;
+    background: #fff;
+    color: #30384a;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.loan-summary-divider {
+    align-self: stretch;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.loan-rate-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.78rem;
+}
+
+.loan-rate-item strong {
+    color: #fff;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.loan-rate-arrow {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.9rem;
 }
 </style>

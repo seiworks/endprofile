@@ -4,15 +4,15 @@
         <p class="mb-4 text-light">
             這裡會協助你一步一步完成預立遺囑、授權書／同居協議、共同購屋協議、生活授權，以及意定監護契約。
         </p>
-        <div class="row g-3">
-            <div v-for="document in DOCUMENTS" :key="document.type" class="col-md-3">
+        <div class="row g-3 home-document-grid">
+            <div v-for="document in DOCUMENTS" :key="document.type" class="col-6 col-md-3">
                 <div class="card h-100 card-soft">
                     <div class="card-body d-flex flex-column justify-content-between">
                         <div>
                             <h5 class="card-title">{{ document.title }}</h5>
                             <p class="card-text">{{ document.description }}</p>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
+                        <div class="home-card-footer d-flex justify-content-between align-items-center mt-2">
                             <router-link class="btn btn-outline-light btn-sm" :to="document.route">開始</router-link>
                             <small v-if="lastUpdatedText(document.type)" class="text-light opacity-75 small">
                                 上次編輯：{{ lastUpdatedText(document.type) }}
@@ -66,3 +66,35 @@ onMounted(() => {
     loadLastUpdated();
 });
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    .home-document-grid {
+        --bs-gutter-x: 0.75rem;
+        --bs-gutter-y: 0.75rem;
+    }
+
+    .home-document-grid .card-body {
+        padding: 1rem;
+    }
+
+    .home-document-grid .card-title {
+        font-size: 1rem;
+    }
+
+    .home-document-grid .card-text {
+        font-size: 0.85rem;
+        line-height: 1.45;
+    }
+
+    .home-card-footer {
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .home-card-footer .btn {
+        width: 100%;
+    }
+}
+</style>

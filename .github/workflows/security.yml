@@ -1,0 +1,50 @@
+name: Build and security checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+      - name: Audit production dependencies
+        run: npm audit --audit-level=high
+        working-directory: backend
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        working-directory: frontend
+      - name: Backend smoke check
+        run: npm run smoke
+        working-directory: backend
+      - name: Security integration check
+        run: npm run test:security
+        working-directory: backend
+      - name: Browser vault cryptography check
+        run: node scripts/vault-smoke.mjs
+        working-directory: frontend
+      - name: Loan calculation rules check
+        run: node scripts/loan-calculator-smoke.mjs
+        working-directory: frontend
+      - name: Production frontend build
+        run: npm run build
+        working-directory: frontend

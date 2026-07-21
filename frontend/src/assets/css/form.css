@@ -11,6 +11,40 @@
     font-weight: 500;
 }
 
+.highlight-action-button {
+    min-width: 6.5rem;
+    padding: 0.58rem 1.2rem;
+    border: 1px solid #ffd88a;
+    background: #ffd88a;
+    color: #2c2340;
+    font-weight: 800;
+    box-shadow: 0 0.6rem 1.5rem rgba(255, 216, 138, 0.22);
+    transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1),
+        box-shadow 280ms cubic-bezier(0.32, 0.72, 0, 1),
+        background-color 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.highlight-action-button:hover,
+.highlight-action-button:focus-visible {
+    border-color: #ffe7b8;
+    background: #ffe7b8;
+    color: #211a30;
+    box-shadow: 0 0.8rem 1.8rem rgba(255, 216, 138, 0.3);
+    transform: translateY(-1px);
+}
+
+.highlight-action-button:active {
+    transform: scale(0.98);
+}
+
+.highlight-action-button:disabled {
+    border-color: #d8bd85;
+    background: #d8bd85;
+    color: rgba(44, 35, 64, 0.68);
+    box-shadow: none;
+    transform: none;
+}
+
 .btn-primary,
 .btn-secondary,
 .btn-outline-primary {
@@ -56,6 +90,23 @@
     color: #fefcf5 !important;
 }
 
+@media (max-width: 991.98px) {
+    .app-navbar .navbar-collapse {
+        margin-top: 0.75rem;
+        padding: 0.75rem 1rem 1rem;
+        border-radius: 1rem;
+        background: rgba(7, 28, 66, 0.96);
+        box-shadow: 0 1rem 2rem rgba(3, 15, 40, 0.28);
+    }
+
+    .app-navbar .nav-link {
+        min-height: 2.75rem;
+        display: flex;
+        align-items: center;
+        padding: 0.65rem 0.25rem;
+    }
+}
+
 .nav-feather-icon {
     display: inline-flex;
     align-items: center;
@@ -77,6 +128,7 @@
 .pdf-icon-btn {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 4px;
 }
 

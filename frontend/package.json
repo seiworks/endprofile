@@ -10,9 +10,11 @@
     },
     "dependencies": {
         "@mdi/font": "^7.4.47",
+        "@pdf-lib/fontkit": "^1.1.1",
         "axios": "^1.13.5",
         "bootstrap": "^5.3.8",
         "material-design-icons-iconfont": "^6.7.0",
+        "pdf-lib": "^1.17.1",
         "v-calendar": "^3.1.2",
         "vite-plugin-vuetify": "^2.1.3",
         "vue": "^3.5.25",
@@ -23,6 +25,7 @@
     },
     "devDependencies": {
         "@vitejs/plugin-vue": "^5.2.4",
-        "vite": "^5.4.21"
+        "fake-indexeddb": "^6.2.5",
+        "vite": "^6.4.3"
     }
 }

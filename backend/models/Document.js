@@ -20,11 +20,13 @@ const documentSchema = new mongoose.Schema(
         },
         structuredData: {
             type: Object,
-            default: {},
         },
         draftText: {
             type: String,
-            default: '',
+        },
+        encryptedPayload: {
+            type: mongoose.Schema.Types.Mixed,
+            default: null,
         },
         version: {
             type: Number,

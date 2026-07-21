@@ -8,11 +8,11 @@
                     <p class="mb-0 text-light opacity-75">輸入貸款條件，快速比較每月總繳款與雙方分攤金額。</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
-                    <button type="button" class="btn apply-button" @click="applyToJointPurchase">
+                    <button type="button" class="btn highlight-action-button" @click="applyToJointPurchase">
                         <i class="mdi mdi-check-circle-outline me-1" />
                         套用
                     </button>
-                    <router-link class="btn btn-outline-light" to="/endprofile/joint-purchase">
+                    <router-link class="btn btn-outline-light calculator-back-button" to="/endprofile/joint-purchase">
                         返回共同購屋協議
                     </router-link>
                 </div>
@@ -181,6 +181,21 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="mt-3">
+                                <span class="form-label d-block mb-2">整數元無法平分時，多 1 元給</span>
+                                <div class="d-flex gap-2" role="group" aria-label="尾差金額歸屬">
+                                    <button type="button" class="btn flex-fill"
+                                        :class="form.remainderRecipient === 'A' ? 'btn-light' : 'btn-outline-light'"
+                                        @click="form.remainderRecipient = 'A'">
+                                        甲方（預設）
+                                    </button>
+                                    <button type="button" class="btn flex-fill"
+                                        :class="form.remainderRecipient === 'B' ? 'btn-light' : 'btn-outline-light'"
+                                        @click="form.remainderRecipient = 'B'">
+                                        乙方
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -219,7 +234,7 @@
                                     <strong class="d-block text-light mb-2">青安 3.0 逐年退場概算</strong>
                                     <div v-for="stage in youthStages" :key="stage.year"
                                         class="d-flex justify-content-between gap-3 mb-1">
-                                        <span>第 {{ stage.year }} 年（{{ stage.rate.toFixed(3) }}%）</span>
+                                        <span>第 {{ stage.year }} 年（{{ formatRate(stage.rate) }}%）</span>
                                         <span>{{ formatCurrency(stage.totalMonthly) }}</span>
                                     </div>
                                 </div>
@@ -239,13 +254,16 @@
 <script setup>
 import { computed, reactive } from 'vue';
 import { useRouter } from 'vue-router';
-import { LOAN_CALCULATOR_TRANSFER_KEY } from '../../constants/loanCalculator';
+import { setLoanCalculatorResult } from '../../services/loanTransfer';
+import {
+    calculateMonthlyPayment, calculateYouthStages, formatRate, splitPayment,
+} from '../../services/loanCalculator';
 
 const router = useRouter();
 
 const form = reactive({
     loanType: 'regular',
-    totalPrice: 18680000,
+    totalPrice: 0,
     ltv: 80,
     regularRate: 3.0,
     regularYears: 30,
@@ -256,6 +274,7 @@ const form = reactive({
     generalRate: 3,
     generalYears: 30,
     shareA: 50,
+    remainderRecipient: 'A',
 });
 
 const asNumber = (value) => {
@@ -264,26 +283,6 @@ const asNumber = (value) => {
 };
 
 const clamp = (value, min, max) => Math.min(Math.max(asNumber(value), min), max);
-
-const monthlyPayment = (principal, annualRate, years) => {
-    const amount = Math.max(asNumber(principal), 0);
-    const months = Math.max(asNumber(years) * 12, 0);
-    const monthlyRate = Math.max(asNumber(annualRate), 0) / 100 / 12;
-    if (!amount || !months) return 0;
-    if (!monthlyRate) return amount / months;
-    return (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
-};
-
-const remainingBalance = (principal, annualRate, monthlyAmount, paidMonths) => {
-    const amount = Math.max(asNumber(principal), 0);
-    const rate = Math.max(asNumber(annualRate), 0) / 100 / 12;
-    if (!rate) return Math.max(amount - monthlyAmount * paidMonths, 0);
-    return Math.max(
-        amount * Math.pow(1 + rate, paidMonths)
-        - monthlyAmount * ((Math.pow(1 + rate, paidMonths) - 1) / rate),
-        0,
-    );
-};
 
 const estimatedLoanAmount = computed(() =>
     Math.round(Math.max(asNumber(form.totalPrice), 0) * clamp(form.ltv, 0, 100) / 100),
@@ -294,35 +293,18 @@ const shareA = computed(() => clamp(form.shareA, 0, 100));
 const shareB = computed(() => 100 - shareA.value);
 
 const regularMonthly = computed(() =>
-    monthlyPayment(estimatedLoanAmount.value, form.regularRate, form.regularYears),
+    calculateMonthlyPayment(estimatedLoanAmount.value, form.regularRate, form.regularYears),
 );
 const generalMonthly = computed(() =>
-    monthlyPayment(generalLoanAmount.value, form.generalRate, form.generalYears),
+    calculateMonthlyPayment(generalLoanAmount.value, form.generalRate, form.generalYears),
 );
-const youthStages = computed(() => {
-    const totalMonths = Math.max(asNumber(form.youthYears) * 12, 0);
-    let balance = youthLoanAmount.value;
-    const rates = [
-        form.youthPreferentialRate,
-        form.youthPreferentialRate,
-        form.youthPreferentialRate,
-        asNumber(form.youthPreferentialRate) + 0.125,
-        asNumber(form.youthPreferentialRate) + 0.25,
-        asNumber(form.youthPreferentialRate) + 0.375,
-        form.youthOriginalRate,
-    ];
-    return rates.map((rate, index) => {
-        const remainingMonths = Math.max(totalMonths - index * 12, 0);
-        const youthMonthly = remainingMonths ? monthlyPayment(balance, rate, remainingMonths / 12) : 0;
-        const stage = {
-            year: index + 1,
-            rate: asNumber(rate),
-            totalMonthly: Math.round(youthMonthly + generalMonthly.value),
-        };
-        balance = remainingBalance(balance, rate, youthMonthly, Math.min(12, remainingMonths));
-        return stage;
-    });
-});
+const youthStages = computed(() => calculateYouthStages({
+    youthAmount: youthLoanAmount.value,
+    youthYears: form.youthYears,
+    preferentialRate: form.youthPreferentialRate,
+    originalRate: form.youthOriginalRate,
+    generalMonthly: generalMonthly.value,
+}));
 
 const firstYearMonthly = computed(() => form.loanType === 'regular'
     ? Math.round(regularMonthly.value)
@@ -332,10 +314,12 @@ const afterExitMonthly = computed(() => form.loanType === 'regular'
     ? firstYearMonthly.value
     : youthStages.value[6]?.totalMonthly || 0,
 );
-const firstYearA = computed(() => Math.floor(firstYearMonthly.value * shareA.value / 100));
-const firstYearB = computed(() => firstYearMonthly.value - firstYearA.value);
-const afterExitA = computed(() => Math.floor(afterExitMonthly.value * shareA.value / 100));
-const afterExitB = computed(() => afterExitMonthly.value - afterExitA.value);
+const firstYearSplit = computed(() => splitPayment(firstYearMonthly.value, shareA.value, form.remainderRecipient));
+const afterExitSplit = computed(() => splitPayment(afterExitMonthly.value, shareA.value, form.remainderRecipient));
+const firstYearA = computed(() => firstYearSplit.value.partyA);
+const firstYearB = computed(() => firstYearSplit.value.partyB);
+const afterExitA = computed(() => afterExitSplit.value.partyA);
+const afterExitB = computed(() => afterExitSplit.value.partyB);
 
 const formatMoney = (value) => {
     if (value === null || value === undefined || value === '') return '';
@@ -351,7 +335,7 @@ const onMoneyInput = (key, event) => {
 };
 
 const applyToJointPurchase = () => {
-    window.sessionStorage.setItem(LOAN_CALCULATOR_TRANSFER_KEY, JSON.stringify({
+    setLoanCalculatorResult({
         loanPlan: form.loanType,
         regularLoanRate: form.regularRate,
         youthPreferentialRate: form.youthPreferentialRate,
@@ -361,7 +345,8 @@ const applyToJointPurchase = () => {
         firstYearB: firstYearB.value,
         afterExitA: afterExitA.value,
         afterExitB: afterExitB.value,
-    }));
+        remainderRecipient: form.remainderRecipient,
+    });
     router.push({ name: 'joint-purchase' });
 };
 </script>
@@ -385,19 +370,14 @@ const applyToJointPurchase = () => {
     line-height: 1.05;
 }
 
-.apply-button {
-    border-color: #ffd88a;
-    background: #ffd88a;
-    color: #2c2340;
-    font-weight: 800;
-    box-shadow: 0 0.6rem 1.5rem rgba(255, 216, 138, 0.22);
-}
-
-.apply-button:hover,
-.apply-button:focus {
-    border-color: #ffe7b8;
-    background: #ffe7b8;
-    color: #211a30;
+.calculator-back-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.58rem 1.2rem;
+    line-height: 1.2;
+    text-align: center;
 }
 
 .loan-section {
@@ -421,6 +401,7 @@ const applyToJointPurchase = () => {
 }
 
 .result-card {
+    border-radius: 18px;
     color: #fff;
     border: 1px solid rgba(255, 216, 138, 0.35);
     background: linear-gradient(145deg, rgba(70, 48, 96, 0.96), rgba(33, 46, 76, 0.96));

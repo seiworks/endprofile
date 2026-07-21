@@ -22,6 +22,20 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: 'zh-TW',
         },
+        vaultMetadata: {
+            type: mongoose.Schema.Types.Mixed,
+            required: true,
+        },
+        sessionVersion: {
+            type: Number,
+            default: 0,
+            select: false,
+        },
+        lastLoginAt: {
+            type: Date,
+            default: null,
+            select: false,
+        },
     },
     { timestamps: true }
 );
@@ -33,4 +47,3 @@ userSchema.methods.comparePassword = function comparePassword(password) {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
-

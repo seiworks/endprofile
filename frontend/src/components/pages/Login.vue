@@ -37,10 +37,26 @@
                                 <input v-model="password" type="password" class="login-input" placeholder="請輸入密碼" />
                             </div>
                         </div>
+                        <label class="login-remember-row">
+                            <input v-model="rememberMe" type="checkbox" />
+                            <span>記住 Email 並在這台裝置保持登入 7 天</span>
+                        </label>
+                        <p v-if="rememberMe" class="login-security-note">
+                            只適合個人裝置；共用電腦請不要勾選。
+                        </p>
                         <button class="login-button" type="submit" :disabled="submitting">
                             {{ submitting ? '登入中…' : '進入' }}
                         </button>
                         <p v-if="error" class="login-error">{{ error }}</p>
+                        <div v-if="recoveryKey" class="login-success">
+                            <strong>舊帳號已升級，請保存復原金鑰</strong>
+                            <p class="mt-2 mb-2 text-break">{{ recoveryKey }}</p>
+                            <button type="button" class="btn btn-outline-light btn-sm mb-2"
+                                @click="downloadRecoveryKey">
+                                下載復原金鑰
+                            </button>
+                            <button type="button" class="login-button" @click="continueToHome">我已安全保存，繼續</button>
+                        </div>
                         <p class="login-footer-text">
                             <router-link to="/forgot-password">忘記密碼？</router-link>
                         </p>
@@ -58,13 +74,25 @@
 <script setup>
 import { ref } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
-import { login, setAuthToken } from '../../services/auth';
+import { useRoute, useRouter } from 'vue-router';
+import { initializeVault, login } from '../../services/auth';
+import {
+    createVault, forgetRememberedVault, rememberVaultOnDevice, unlockVault,
+} from '../../services/vault';
+import { migrateLegacyDocuments } from '../../services/documentMigration';
 
-const email = ref('');
+const REMEMBERED_EMAIL_KEY = 'endprofile.rememberedEmail';
+const savedEmail = typeof localStorage === 'undefined' ? '' : localStorage.getItem(REMEMBERED_EMAIL_KEY) || '';
+const email = ref(savedEmail);
 const password = ref('');
+const rememberMe = ref(Boolean(savedEmail));
 const submitting = ref(false);
-const error = ref('');
+const route = useRoute();
+const initialMessage = route.query.reason === 'inactive'
+    ? '已因閒置 30 分鐘自動登出，請重新登入。'
+    : route.query.reason === 'session' ? '登入已過期或在其他裝置登出，請重新登入。' : '';
+const error = ref(initialMessage);
+const recoveryKey = ref('');
 
 const store = useStore();
 const router = useRouter();
@@ -86,24 +114,40 @@ async function onSubmit() {
         const auth = await login({
             email: email.value,
             password: password.value,
+            rememberMe: rememberMe.value,
         });
 
-        setAuthToken(auth.token);
+        if (auth.vaultMetadata) {
+            await unlockVault(password.value, auth.vaultMetadata);
+        } else {
+            const vault = await createVault(password.value);
+            await initializeVault(vault.metadata);
+            recoveryKey.value = vault.recoveryKey;
+        }
+        if (rememberMe.value) {
+            localStorage.setItem(REMEMBERED_EMAIL_KEY, email.value.trim().toLowerCase());
+            await rememberVaultOnDevice(auth.user.id);
+        } else {
+            localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+            await forgetRememberedVault();
+        }
         store.dispatch('user/saveAuth', {
-            token: auth.token,
             user: auth.user,
         });
+        await migrateLegacyDocuments();
 
-        router.push({ name: 'home' });
+        password.value = '';
+        if (!recoveryKey.value) router.push({ name: 'home' });
     } catch (e) {
-        console.error(e);
         if (e.code === 'ECONNABORTED') {
             error.value = '登入逾時，請確認後端與 MongoDB 是否已啟動。';
             return;
         }
 
         if (!e.response) {
-            error.value = '無法連線到後端，請確認後端是否已啟動。';
+            error.value = e.message?.includes('裝置保險庫')
+                ? '此瀏覽器無法安全保留登入，請取消勾選後重試。'
+                : '無法連線到後端，請確認後端是否已啟動。';
             return;
         }
 
@@ -112,5 +156,20 @@ async function onSubmit() {
     } finally {
         submitting.value = false;
     }
+}
+
+function continueToHome() {
+    recoveryKey.value = '';
+    router.push({ name: 'home' });
+}
+
+function downloadRecoveryKey() {
+    const blob = new Blob([recoveryKey.value], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'endprofile-recovery-key.txt';
+    link.click();
+    URL.revokeObjectURL(url);
 }
 </script>

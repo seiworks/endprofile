@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+**/.env
+**/node_modules
+frontend/dist
+tmp
+output
+recoverykey-sei
+*.log
+.DS_Store
+AGENTS.md
+frontend/src/components/pages/ForgotPassword 2.vue
+frontend/src/services/pdf 2.js

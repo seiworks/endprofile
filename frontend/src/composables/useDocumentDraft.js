@@ -1,6 +1,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import axios from 'axios';
 import { downloadDocumentPdf } from '../services/pdf';
+import { decryptPayload, encryptPayload } from '../services/vault';
 
 function cloneForm(form) {
     return JSON.parse(JSON.stringify(form));
@@ -56,10 +57,13 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         saving.value = true;
         error.value = '';
         try {
-            const payload = {
-                title,
+            const encryptedPayload = await encryptPayload({
                 structuredData: cloneForm(form),
                 draftText: previewText.value,
+            });
+            const payload = {
+                title,
+                encryptedPayload,
                 status: 'DRAFT',
             };
             const response = documentId.value
@@ -92,11 +96,18 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
             if (!doc) {
                 return;
             }
-            documentId.value = doc._id;
-            if (doc.updatedAt) {
-                lastSavedAt.value = doc.updatedAt;
+            const detailResponse = await axios.get(`/api/documents/${doc._id}`);
+            const detail = detailResponse.data || doc;
+            documentId.value = detail._id;
+            if (detail.updatedAt) {
+                lastSavedAt.value = detail.updatedAt;
             }
-            applyStructuredData(form, doc.structuredData);
+            if (detail.encryptedPayload) {
+                const decrypted = await decryptPayload(detail.encryptedPayload);
+                applyStructuredData(form, decrypted.structuredData);
+            } else {
+                applyStructuredData(form, detail.structuredData);
+            }
         } catch (e) {
             console.error(e);
         } finally {

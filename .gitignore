@@ -14,6 +14,10 @@ build/
 .next/
 .env
 AGENTS.md
+frontend/src/services/pdf 2.js
+frontend/src/components/pages/ForgotPassword 2.vue
+tmp/
+recoverykey-sei/
 .DS_Store
 dist-ssr
 *.local

@@ -10,7 +10,14 @@ const {
 
 const router = express.Router();
 
-const UPDATE_FIELDS = ['title', 'structuredData', 'draftText', 'status'];
+const UPDATE_FIELDS = ['title', 'encryptedPayload', 'status'];
+
+function normalizeEncryptedEnvelope(value) {
+    if (!value || value.version !== 1 || value.algorithm !== 'AES-256-GCM') return null;
+    if (typeof value.iv !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.iv) || value.iv.length > 64) return null;
+    if (typeof value.ciphertext !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value.ciphertext)) return null;
+    return { version: 1, algorithm: 'AES-256-GCM', iv: value.iv, ciphertext: value.ciphertext };
+}
 
 function hasOwn(payload, field) {
     return Object.prototype.hasOwnProperty.call(payload, field);
@@ -18,7 +25,9 @@ function hasOwn(payload, field) {
 
 router.get('/', auth, async (req, res) => {
     try {
-        const docs = await Document.find({ userId: req.user.id }).sort({ updatedAt: -1 });
+        const docs = await Document.find({ userId: req.user.id })
+            .select('-structuredData -draftText')
+            .sort({ updatedAt: -1 });
         return res.json(docs);
     } catch (err) {
         console.error(err);
@@ -54,13 +63,16 @@ router.post('/', auth, async (req, res) => {
         if (payload.status && !DOCUMENT_STATUS_VALUES.includes(payload.status)) {
       return sendError(res, 400, '文件狀態不正確');
         }
+        const encryptedPayload = normalizeEncryptedEnvelope(payload.encryptedPayload);
+        if (!encryptedPayload) {
+            return sendError(res, 400, '文件必須以加密格式儲存');
+        }
 
         const doc = await Document.create({
             userId: req.user.id,
             type: payload.type,
             title: payload.title.trim(),
-            structuredData: payload.structuredData || {},
-            draftText: payload.draftText || '',
+            encryptedPayload,
             status: payload.status || DOCUMENT_STATUSES.DRAFT,
         });
         return res.status(201).json(doc);
@@ -91,6 +103,11 @@ router.patch('/:id', auth, async (req, res) => {
         if (hasOwn(update, 'status') && !DOCUMENT_STATUS_VALUES.includes(update.status)) {
       return sendError(res, 400, '文件狀態不正確');
         }
+        if (hasOwn(update, 'encryptedPayload')) {
+            const encryptedPayload = normalizeEncryptedEnvelope(update.encryptedPayload);
+            if (!encryptedPayload) return sendError(res, 400, '文件加密格式不正確');
+            update.encryptedPayload = encryptedPayload;
+        }
 
         if (Object.keys(update).length === 0) {
       return sendError(res, 400, '沒有可更新的欄位');
@@ -100,6 +117,7 @@ router.patch('/:id', auth, async (req, res) => {
             { _id: req.params.id, userId: req.user.id },
             {
                 $set: update,
+                $unset: { structuredData: 1, draftText: 1 },
                 $inc: { version: 1 },
             },
             { new: true }

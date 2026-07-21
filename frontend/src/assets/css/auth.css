@@ -94,7 +94,7 @@
 
 .login-input {
     width: 100%;
-    border-radius: 999px;
+    border-radius: 5px;
     border: none;
     padding: 10px 14px 10px 40px;
     background-color: rgba(255, 255, 255, 0.9);
@@ -106,6 +106,18 @@
 
 .login-input:focus {
     box-shadow: 0 0 0 2px rgba(73, 123, 187, 0.7);
+}
+
+.login-textarea-wrapper .login-input-icon {
+    top: 14px;
+    transform: none;
+}
+
+.login-textarea {
+    min-height: 108px;
+    border-radius: 14px;
+    line-height: 1.5;
+    resize: vertical;
 }
 
 .login-button {
@@ -127,6 +139,32 @@
         opacity 0.15s ease;
 }
 
+.login-remember-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    margin: -0.1rem 0 0.35rem;
+    color: #fff8e8;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    cursor: pointer;
+}
+
+.login-remember-row input {
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-top: 0.1rem;
+    accent-color: #ffd88a;
+    flex: 0 0 auto;
+}
+
+.login-security-note {
+    margin: 0.35rem 0 0.65rem 1.65rem;
+    color: #fff0bd;
+    font-size: 0.8rem;
+    line-height: 1.45;
+}
+
 .login-button:hover:enabled {
     transform: translateY(-1px);
     box-shadow: 0 12px 28px rgba(10, 32, 77, 0.6);
@@ -140,16 +178,24 @@
 
 .login-error,
 .login-success {
-    margin-top: 12px;
-    font-size: 13px;
+    margin-top: 14px;
+    padding: 0.8rem 0.95rem;
+    border-radius: 0.85rem;
+    font-size: 0.9rem;
+    font-weight: 650;
+    line-height: 1.5;
 }
 
 .login-error {
-    color: #ffebee;
+    border: 1px solid rgba(255, 199, 199, 0.72);
+    background: rgba(92, 8, 22, 0.88);
+    color: #fff4f4;
 }
 
 .login-success {
-    color: #e6ffe8;
+    border: 1px solid rgba(181, 255, 199, 0.7);
+    background: rgba(10, 82, 49, 0.88);
+    color: #f1fff4;
 }
 
 .login-footer-text {
@@ -161,6 +207,40 @@
 .login-footer-text a {
     color: #ffffff;
     text-decoration: underline;
+}
+
+.login-secondary-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+        transform 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.login-secondary-button:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(10, 32, 77, 0.25);
+}
+
+.login-secondary-button:focus-visible {
+    outline: 3px solid rgba(255, 225, 155, 0.9);
+    outline-offset: 2px;
 }
 
 @keyframes fadeInDown {

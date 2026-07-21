@@ -1,22 +1,22 @@
 <template>
     <div class="wizard-container text-light">
         <teleport to="body">
-            <button v-if="showFloatingSave" type="button" class="save-button-position btn btn-outline-light btn-sm me-2"
+            <button v-if="showFloatingSave" type="button" class="save-button-position btn highlight-action-button"
                 :disabled="saving" @click="onSaveDraft">
                 <span v-if="saving">儲存中…</span>
                 <span v-else>儲存</span>
             </button>
         </teleport>
-        <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
+        <div class="wizard-header mb-3">
+            <div class="wizard-heading">
                 <h3 class="mb-1">意定監護契約</h3>
                 <p class="mb-0">指定失智或昏迷時，最信任的監護人與決策原則。</p>
             </div>
-            <div class="text-end">
-                <p v-if="lastSavedText" class="mb-1 small text-light opacity-75">
+            <div class="wizard-actions">
+                <p v-if="lastSavedText" class="wizard-last-saved mb-1 small text-light opacity-75">
                     上次編輯：{{ lastSavedText }}
                 </p>
-                <div class="d-flex justify-content-end">
+                <div class="wizard-action-buttons">
                     <button type="button" class="btn btn-outline-light btn-sm me-2" :disabled="saving"
                         @click="onSaveDraft">
                         <span v-if="saving">儲存中…</span>
