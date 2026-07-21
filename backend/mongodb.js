@@ -1,7 +1,4 @@
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 function connectMongo() {
     const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/endprofile';
@@ -9,6 +6,7 @@ function connectMongo() {
     mongoose
         .connect(uri, {
             autoIndex: true,
+            serverSelectionTimeoutMS: 5000,
         })
         .then(() => {
             console.log('MongoDB connected');
@@ -20,4 +18,3 @@ function connectMongo() {
 }
 
 module.exports = connectMongo;
-

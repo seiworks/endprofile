@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { DOCUMENT_TYPE_VALUES, DOCUMENT_STATUS_VALUES, DOCUMENT_STATUSES } = require('../constants/documentTypes');
 
 const documentSchema = new mongoose.Schema(
     {
@@ -10,7 +11,7 @@ const documentSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ['WILL', 'COHABITATION', 'GUARDIANSHIP', 'LIFE_AUTHORIZATION', 'JOINT_PURCHASE'],
+            enum: DOCUMENT_TYPE_VALUES,
             required: true,
         },
         title: {
@@ -31,8 +32,8 @@ const documentSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ['DRAFT', 'REVIEWED', 'SIGNED'],
-            default: 'DRAFT',
+            enum: DOCUMENT_STATUS_VALUES,
+            default: DOCUMENT_STATUSES.DRAFT,
         },
     },
     { timestamps: true }

@@ -10,6 +10,7 @@ import 'material-design-icons-iconfont/dist/material-design-icons.css';
 import './assets/css/base.css';
 import './assets/css/layout.css';
 import './assets/css/form.css';
+import './assets/css/auth.css';
 
 const app = createApp(App);
 

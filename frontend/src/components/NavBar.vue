@@ -12,20 +12,11 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto" v-if="isAuthenticated">
-                    <li class="nav-item">
-                        <router-link class="nav-link" to="/endprofile/will">預立遺囑</router-link>
+                    <li v-for="document in DOCUMENTS" :key="document.type" class="nav-item">
+                        <router-link class="nav-link" :to="document.route">{{ document.navTitle }}</router-link>
                     </li>
                     <li class="nav-item">
-                        <router-link class="nav-link" to="/endprofile/cohabitation">同居協議</router-link>
-                    </li>
-                    <li class="nav-item">
-                        <router-link class="nav-link" to="/endprofile/joint-purchase">共同購屋協議</router-link>
-                    </li>
-                    <li class="nav-item">
-                        <router-link class="nav-link" to="/endprofile/life-authorization">生活授權</router-link>
-                    </li>
-                    <li class="nav-item">
-                        <router-link class="nav-link" to="/endprofile/guardianship">意定監護</router-link>
+                        <router-link class="nav-link" to="/tools/monthly-loan">貸款試算</router-link>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -51,6 +42,7 @@ import { computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { setAuthToken } from '../services/auth';
+import { DOCUMENTS } from '../constants/documents';
 
 const store = useStore();
 const router = useRouter();

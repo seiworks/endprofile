@@ -13,6 +13,7 @@ dist
 build/
 .next/
 .env
+AGENTS.md
 .DS_Store
 dist-ssr
 *.local

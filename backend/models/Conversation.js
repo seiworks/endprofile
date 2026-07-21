@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Reserved for future AI-assisted drafting conversations linked to a user and optional document.
 const messageSchema = new mongoose.Schema(
   {
     role: {
@@ -43,4 +44,3 @@ const conversationSchema = new mongoose.Schema(
 const Conversation = mongoose.model('Conversation', conversationSchema);
 
 module.exports = Conversation;
-

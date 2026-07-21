@@ -142,9 +142,11 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
-import { downloadDocumentPdf } from '../../services/pdf';
+import { computed, reactive } from 'vue';
+import { useDocumentDraft } from '../../composables/useDocumentDraft';
+import { DOCUMENT_BY_KEY } from '../../constants/documents';
+
+const documentMeta = DOCUMENT_BY_KEY.lifeAuthorization;
 
 const form = reactive({
     principalName: '',
@@ -158,20 +160,6 @@ const form = reactive({
     recording: '',
     otherNotes: '',
 });
-
-const downloading = ref(false);
-const saving = ref(false);
-const error = ref('');
-const lastSavedAt = ref('');
-const documentId = ref('');
-const showFloatingSave = ref(false);
-
-const handleScroll = () => {
-    if (typeof window === 'undefined') {
-        return;
-    }
-    showFloatingSave.value = window.scrollY > 200;
-};
 
 const previewText = computed(() => {
     const principal = form.principalName || '＿＿＿＿＿＿（授權人姓名待填）';
@@ -244,108 +232,18 @@ ${otherNotesText}
 本生活授權書為協助日後與金融機構、醫療機構或相關單位溝通之用，正式版本仍建議洽詢專業法律服務，必要時得採書面或錄影方式制作，並視需求辦理公證，以強化其證明力。`;
 });
 
-const lastSavedText = computed(() => {
-    if (!lastSavedAt.value) {
-        return '';
-    }
-    const date = new Date(lastSavedAt.value);
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-    const pad = (n) => n.toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    return `${year}/${month}/${day} ${hours}:${minutes}`;
+const {
+    downloading,
+    error,
+    lastSavedText,
+    onDownload,
+    onSaveDraft,
+    saving,
+    showFloatingSave,
+} = useDocumentDraft({
+    type: documentMeta.type,
+    title: documentMeta.draftTitle,
+    form,
+    previewText,
 });
-
-async function onSaveDraft() {
-    if (saving.value) {
-        return;
-    }
-    saving.value = true;
-    error.value = '';
-    try {
-        const structuredData = JSON.parse(JSON.stringify(form));
-        const payload = {
-            title: '生活授權書',
-            structuredData,
-            draftText: previewText.value,
-            status: 'DRAFT',
-        };
-        let response;
-        if (documentId.value) {
-            response = await axios.patch(`/api/documents/${documentId.value}`, payload);
-        } else {
-            response = await axios.post('/api/documents', {
-                type: 'LIFE_AUTHORIZATION',
-                ...payload,
-            });
-        }
-        const doc = response && response.data;
-        if (doc && doc._id) {
-            documentId.value = doc._id;
-        }
-        if (doc && doc.updatedAt) {
-            lastSavedAt.value = doc.updatedAt;
-        }
-    } catch (e) {
-        console.error(e);
-        error.value = '儲存失敗，請稍後再試。';
-    } finally {
-        saving.value = false;
-    }
-}
-
-async function loadDraft() {
-    try {
-        const response = await axios.get('/api/documents');
-        const docs = Array.isArray(response.data) ? response.data : [];
-        const doc = docs.find((d) => d.type === 'LIFE_AUTHORIZATION');
-        if (!doc) {
-            return;
-        }
-        documentId.value = doc._id;
-        if (doc.updatedAt) {
-            lastSavedAt.value = doc.updatedAt;
-        }
-        const data = doc.structuredData || {};
-        Object.keys(data).forEach((key) => {
-            if (Object.prototype.hasOwnProperty.call(form, key)) {
-                form[key] = data[key];
-            }
-        });
-    } catch (e) {
-        console.error(e);
-    }
-}
-
-onMounted(() => {
-    if (typeof window !== 'undefined') {
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
-    }
-    loadDraft();
-});
-
-onUnmounted(() => {
-    if (typeof window !== 'undefined') {
-        window.removeEventListener('scroll', handleScroll);
-    }
-});
-
-async function onDownload() {
-    downloading.value = true;
-    error.value = '';
-    try {
-        const title = '生活授權書';
-        await downloadDocumentPdf({ type: 'LIFE_AUTHORIZATION', title, content: previewText.value });
-    } catch (e) {
-        error.value = '下載 PDF 失敗，請稍後再試。';
-    } finally {
-        downloading.value = false;
-    }
-}
 </script>

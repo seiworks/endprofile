@@ -28,6 +28,16 @@ const endProfileSchema = new mongoose.Schema(
       enum: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
       default: 'NOT_STARTED',
     },
+    lifeAuthorizationStatus: {
+      type: String,
+      enum: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
+      default: 'NOT_STARTED',
+    },
+    jointPurchaseStatus: {
+      type: String,
+      enum: ['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'],
+      default: 'NOT_STARTED',
+    },
     preferences: {
       type: Object,
       default: {},
@@ -39,4 +49,3 @@ const endProfileSchema = new mongoose.Schema(
 const EndProfile = mongoose.model('EndProfile', endProfileSchema);
 
 module.exports = EndProfile;
-

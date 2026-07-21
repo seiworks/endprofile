@@ -239,218 +239,92 @@
                             </div>
 
                             <div class="mb-3 ps-3 border-start border-light border-opacity-25">
-                                <h6 class="mb-2">每月貸款負擔</h6>
-
-                                <div class="mb-2">
-                                    <div class="form-check form-check-inline">
-                                        <input v-model="form.loanType" class="form-check-input" type="radio"
-                                            id="loanTypeRegular" value="regular">
-                                        <label class="form-check-label" for="loanTypeRegular">一般首購</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input v-model="form.loanType" class="form-check-input" type="radio"
-                                            id="loanTypeYouth" value="youth">
-                                        <label class="form-check-label" for="loanTypeYouth">新青安</label>
-                                    </div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                    <h6 class="mb-0">每月貸款負擔</h6>
+                                    <router-link class="btn btn-outline-light btn-sm" to="/tools/monthly-loan">
+                                        前往負擔試算
+                                    </router-link>
                                 </div>
-
-                                <div v-if="form.loanType === 'regular'" class="mb-3">
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-3 col-6">
-                                            <label class="form-label mb-0">貸款成數</label>
+                                <p class="small text-muted">方案與利率由負擔試算頁套用；每月負擔金額仍可手動調整。</p>
+                                <div class="rounded border border-light border-opacity-25 p-3 mb-3">
+                                    <div v-if="form.loanPlan === 'regular'"
+                                        class="d-flex flex-wrap align-items-end gap-3">
+                                        <span class="badge rounded-pill text-bg-light px-3 py-2">
+                                            一般首購
+                                        </span>
+                                        <div class="compact-rate-field">
+                                            <label class="form-label mb-0">適用年利率</label>
                                             <div class="input-group">
-                                                <input v-model.number="form.regularLtv" type="number" min="0" max="100"
-                                                    class="form-control" />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-5 col-6">
-                                            <label class="form-label mb-0">貸款總額</label>
-                                            <input :value="formatMoney(form.regularAmount)" type="text"
-                                                class="form-control" placeholder="金額"
-                                                @input="onMoneyInput('regularAmount', $event)" />
-                                        </div>
-                                    </div>
-                                    <div class="row g-2 align-items-end">
-                                        <div class="col-md-3 col-6">
-                                            <label class="form-label mb-0">利率</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.regularRate" type="number" step="0.001"
-                                                    class="form-control" />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3 col-6">
-                                            <label class="form-label mb-0">年限</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.regularYears" type="number"
-                                                    class="form-control" />
-                                                <span class="input-group-text">年</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div v-else class="mb-3">
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">整體貸款成數</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.youthGeneralLtv" type="number" min="0"
-                                                    max="100" class="form-control" />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">整體貸款年限</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.youthYears" type="number"
-                                                    class="form-control" />
-                                                <span class="input-group-text">年</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-12">
-                                            <label class="form-label mb-0">青安貸款金額</label>
-                                            <input :value="formatMoney(form.youthAmount)" type="text"
-                                                class="form-control" placeholder="金額"
-                                                @input="onMoneyInput('youthAmount', $event)" />
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-12">
-                                            <label class="form-label mb-0">第一段利率</label>
-                                            <div class="row g-1">
-                                                <div class="col-3">
-                                                    <input v-model.number="form.youthFirstFromMonth" type="number"
-                                                        class="form-control" placeholder="起" />
-                                                </div>
-                                                <div class="col-1 d-flex align-items-center justify-content-center">
-                                                    <span class="small text-muted">~</span>
-                                                </div>
-                                                <div class="col-3">
-                                                    <input v-model.number="form.youthFirstToMonth" type="number"
-                                                        class="form-control" placeholder="迄" />
-                                                </div>
-                                                <div class="col-2 d-flex align-items-center justify-content-center">
-                                                    <span class="small text-muted">月</span>
-                                                </div>
-                                                <div class="col-3">
-                                                    <div class="input-group">
-                                                        <input v-model.number="form.youthFirstRate" type="number"
-                                                            step="0.001" class="form-control" />
-                                                        <span class="input-group-text">%</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-12">
-                                            <label class="form-label mb-0">第二段利率</label>
-                                            <div class="row g-1">
-                                                <div class="col-3">
-                                                    <input v-model.number="form.youthSecondFromMonth" type="number"
-                                                        class="form-control" placeholder="起" />
-                                                </div>
-                                                <div class="col-1 d-flex align-items-center justify-content-center">
-                                                    <span class="small text-muted">~</span>
-                                                </div>
-                                                <div class="col-3">
-                                                    <input v-model.number="form.youthSecondToMonth" type="number"
-                                                        class="form-control" placeholder="迄" />
-                                                </div>
-                                                <div class="col-2 d-flex align-items-center justify-content-center">
-                                                    <span class="small text-muted">月</span>
-                                                </div>
-                                                <div class="col-3">
-                                                    <div class="input-group">
-                                                        <input v-model.number="form.youthSecondRate" type="number"
-                                                            step="0.001" class="form-control" />
-                                                        <span class="input-group-text">%</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-8 col-12">
-                                            <label class="form-label mb-0">一般貸款金額（自動計算，可覆寫）</label>
-                                            <input :value="formatMoney(form.youthGeneralAmount)" type="text"
-                                                class="form-control" placeholder="自動計算，可手動修改"
-                                                @input="onMoneyInput('youthGeneralAmount', $event)" />
-                                        </div>
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">一般貸款利率</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.youthGeneralRate" type="number" step="0.001"
-                                                    class="form-control" />
+                                                <input :value="asNumber(form.regularLoanRate).toFixed(3)" type="text"
+                                                    class="form-control" readonly />
                                                 <span class="input-group-text">%</span>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">一般貸款年限</label>
+                                    <div v-else class="d-flex flex-wrap align-items-end gap-3">
+                                        <span class="badge rounded-pill text-bg-light px-3 py-2">
+                                            新青安 3.0
+                                        </span>
+                                        <div class="compact-rate-field">
+                                            <label class="form-label mb-0">前 3 年優惠利率</label>
                                             <div class="input-group">
-                                                <input v-model.number="form.youthGeneralYears" type="number"
-                                                    class="form-control" />
-                                                <span class="input-group-text">年</span>
+                                                <input :value="asNumber(form.youthPreferentialRate).toFixed(3)" type="text"
+                                                    class="form-control" readonly />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="compact-rate-field">
+                                            <label class="form-label mb-0">完全退場後利率</label>
+                                            <div class="input-group">
+                                                <input :value="asNumber(form.youthOriginalRate).toFixed(3)" type="text"
+                                                    class="form-control" readonly />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="compact-rate-field">
+                                            <label class="form-label mb-0">搭配一般貸款年利率</label>
+                                            <div class="input-group">
+                                                <input :value="asNumber(form.generalLoanRate).toFixed(3)" type="text"
+                                                    class="form-control" readonly />
+                                                <span class="input-group-text">%</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="mt-2">
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">甲方分攤比例</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.monthlyShareA" type="number" min="0"
-                                                    max="100" class="form-control" />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">乙方分攤比例</label>
-                                            <div class="input-group">
-                                                <input v-model.number="form.monthlyShareB" type="number" min="0"
-                                                    max="100" class="form-control" />
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-12">
+                                        <strong class="small">{{ form.loanPlan === 'regular' ? '每月負擔' : '第一年每月負擔' }}</strong>
                                     </div>
-                                    <div class="small text-muted mb-1">每月貸款負擔為</div>
-                                    <div class="row g-2 align-items-end mb-2">
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">甲方每月負擔</label>
-                                            <input :value="formatMoney(form.monthlyLoanA)" type="text"
-                                                class="form-control" placeholder="金額"
-                                                @input="onMoneyInput('monthlyLoanA', $event)" />
-                                        </div>
-                                        <div class="col-md-4 col-6">
-                                            <label class="form-label mb-0">乙方每月負擔</label>
-                                            <input :value="formatMoney(form.monthlyLoanB)" type="text"
-                                                class="form-control" placeholder="金額"
-                                                @input="onMoneyInput('monthlyLoanB', $event)" />
-                                        </div>
-                                        <div class="col-md-4 col-12">
-                                            <label class="form-label mb-0">合計每月負擔</label>
-                                            <input :value="formatMoney(loanTotals.a + loanTotals.b)" type="text"
-                                                class="form-control" placeholder="自動計算" readonly />
-                                        </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label mb-0">甲方每月負擔</label>
+                                        <input :value="formatMoney(form.monthlyLoanA)" type="text" class="form-control"
+                                            inputmode="numeric" placeholder="金額"
+                                            @input="onMoneyInput('monthlyLoanA', $event)" />
                                     </div>
-                                    <small class="form-text text-muted d-block" v-if="loanTotals.text">
-                                        {{ loanTotals.text }}
-                                    </small>
+                                    <div class="col-md-6">
+                                        <label class="form-label mb-0">乙方每月負擔</label>
+                                        <input :value="formatMoney(form.monthlyLoanB)" type="text" class="form-control"
+                                            inputmode="numeric" placeholder="金額"
+                                            @input="onMoneyInput('monthlyLoanB', $event)" />
+                                    </div>
+                                </div>
+                                <div v-if="form.loanPlan === 'youth'" class="row g-2">
+                                    <div class="col-12"><strong class="small">利息補貼完全退場後</strong></div>
+                                    <div class="col-md-6">
+                                        <label class="form-label mb-0">甲方每月負擔</label>
+                                        <input :value="formatMoney(form.monthlyLoanAfterExitA)" type="text"
+                                            class="form-control" inputmode="numeric" placeholder="金額"
+                                            @input="onMoneyInput('monthlyLoanAfterExitA', $event)" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label mb-0">乙方每月負擔</label>
+                                        <input :value="formatMoney(form.monthlyLoanAfterExitB)" type="text"
+                                            class="form-control" inputmode="numeric" placeholder="金額"
+                                            @input="onMoneyInput('monthlyLoanAfterExitB', $event)" />
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
 
                         <div class="mb-3">
@@ -512,10 +386,6 @@
                     <div class="card-body">
                         <h5 class="mb-3">共同購屋協議草稿（預覽）</h5>
                         <p class="small text-muted mb-3">以下內容會依照左側填寫自動更新，並作為 PDF 範例文字。</p>
-                        <div v-if="contributionSummary.oneTimeSum > 0 || loanTotals.a > 0 || loanTotals.b > 0"
-                            class="mb-3">
-
-                        </div>
                         <p class="mb-0" style="white-space: pre-line">
                             {{ previewText }}
                         </p>
@@ -527,9 +397,12 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted, onUnmounted, watch } from 'vue';
-import axios from 'axios';
-import { downloadDocumentPdf } from '../../services/pdf';
+import { computed, reactive } from 'vue';
+import { useDocumentDraft } from '../../composables/useDocumentDraft';
+import { DOCUMENT_BY_KEY } from '../../constants/documents';
+import { LOAN_CALCULATOR_TRANSFER_KEY } from '../../constants/loanCalculator';
+
+const documentMeta = DOCUMENT_BY_KEY.jointPurchase;
 
 const form = reactive({
     partnerA: '',
@@ -564,25 +437,13 @@ const form = reactive({
     rentB: null,
     monthlyLoanA: null,
     monthlyLoanB: null,
-    monthlyShareA: 50,
-    monthlyShareB: 50,
-    loanType: 'regular',
-    regularLtv: null,
-    regularAmount: null,
-    regularRate: null,
-    regularYears: null,
-    youthAmount: null,
-    youthFirstFromMonth: null,
-    youthFirstToMonth: null,
-    youthFirstRate: null,
-    youthSecondFromMonth: null,
-    youthSecondToMonth: null,
-    youthSecondRate: null,
-    youthYears: null,
-    youthGeneralLtv: null,
-    youthGeneralAmount: null,
-    youthGeneralRate: null,
-    youthGeneralYears: null,
+    monthlyLoanAfterExitA: null,
+    monthlyLoanAfterExitB: null,
+    loanPlan: 'regular',
+    regularLoanRate: 2.2,
+    youthPreferentialRate: 1.775,
+    youthOriginalRate: 2.275,
+    generalLoanRate: 2.2,
     ownership: '',
     loan: '',
     expenses: '',
@@ -592,20 +453,12 @@ const form = reactive({
     breach: '',
 });
 
-const downloading = ref(false);
-const saving = ref(false);
-const error = ref('');
-const lastSavedAt = ref('');
-const documentId = ref('');
-const showFloatingSave = ref(false);
-
-const handleScroll = () => {
-    if (typeof window === 'undefined') {
-        return;
-    }
-    showFloatingSave.value = window.scrollY > 200;
+const asNumber = (value) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : 0;
 };
-const isAutoUpdatingMonthly = ref(false);
+
+const formatPercent = (value) => `${asNumber(value).toFixed(1).replace(/\.0$/, '')}%`;
 
 const formatMoney = (value) => {
     if (value === null || value === undefined || value === '') {
@@ -634,140 +487,73 @@ const onMoneyInput = (key, event) => {
     event.target.value = formatMoney(num);
 };
 
-const computeMonthlyPayment = (principal, annualRate, years) => {
-    const P = Number(principal) || 0;
-    const rYear = Number(annualRate) || 0;
-    const y = Number(years) || 0;
-    if (P <= 0 || y <= 0) {
-        return 0;
+const applyLoanCalculatorResult = () => {
+    const raw = window.sessionStorage.getItem(LOAN_CALCULATOR_TRANSFER_KEY);
+    if (!raw) return;
+    try {
+        const result = JSON.parse(raw);
+        const assignNumberIfPresent = (key, value) => {
+            if (value !== null && value !== undefined && Number.isFinite(Number(value))) {
+                form[key] = Number(value);
+            }
+        };
+        form.loanPlan = result.loanPlan === 'youth' ? 'youth' : 'regular';
+        assignNumberIfPresent('regularLoanRate', result.regularLoanRate);
+        assignNumberIfPresent('youthPreferentialRate', result.youthPreferentialRate);
+        assignNumberIfPresent('youthOriginalRate', result.youthOriginalRate);
+        assignNumberIfPresent('generalLoanRate', result.generalLoanRate);
+        form.monthlyLoanA = asNumber(result.firstYearA);
+        form.monthlyLoanB = asNumber(result.firstYearB);
+        form.monthlyLoanAfterExitA = asNumber(result.afterExitA);
+        form.monthlyLoanAfterExitB = asNumber(result.afterExitB);
+    } catch (e) {
+        console.error(e);
+    } finally {
+        window.sessionStorage.removeItem(LOAN_CALCULATOR_TRANSFER_KEY);
     }
-    const n = y * 12;
-    const r = rYear > 0 ? (rYear / 100) / 12 : 0;
-    if (r <= 0) {
-        return P / n;
-    }
-    return (P * r) / (1 - Math.pow(1 + r, -n));
 };
 
-watch(
-    () => [form.totalPrice, form.regularLtv],
-    ([total, ltv]) => {
-        const t = Number(total) || 0;
-        const p = Number(ltv) || 0;
-        if (t > 0 && p > 0) {
-            form.regularAmount = Math.round((t * p) / 100);
-        }
-    },
-);
-
-watch(
-    () => [form.totalPrice, form.youthGeneralLtv, form.youthAmount],
-    ([total, ltv, youthAmount]) => {
-        const t = Number(total) || 0;
-        const p = Number(ltv) || 0;
-        const y = Number(youthAmount) || 0;
-        if (t > 0 && p > 0) {
-            const overall = Math.round((t * p) / 100);
-            const general = Math.max(overall - y, 0);
-            form.youthGeneralAmount = general;
-        } else {
-            form.youthGeneralAmount = 0;
-        }
-    },
-);
-
-const downPaymentTotals = computed(() => {
-    const a =
-        (Number(form.downContractA) || 0) +
-        (Number(form.downStage1A) || 0) +
-        (Number(form.downStage2A) || 0) +
-        (Number(form.downAgencyA) || 0) +
-        (Number(form.handoverA) || 0);
-    const b =
-        (Number(form.downContractB) || 0) +
-        (Number(form.downStage1B) || 0) +
-        (Number(form.downStage2B) || 0) +
-        (Number(form.downAgencyB) || 0) +
-        (Number(form.handoverB) || 0);
+const computePairTotals = (label, keysA, keysB) => {
+    const a = keysA.reduce((sum, key) => sum + asNumber(form[key]), 0);
+    const b = keysB.reduce((sum, key) => sum + asNumber(form[key]), 0);
     const sum = a + b;
     if (sum <= 0) {
         return { a: 0, b: 0, text: '' };
     }
     const aRatio = sum > 0 ? (a / sum) * 100 : 0;
     const bRatio = sum > 0 ? (b / sum) * 100 : 0;
-    const fmtP = (n) => `${n.toFixed(1).replace(/\.0$/, '')}%`;
-    const fmtAmt = (n) => n.toLocaleString('zh-TW');
     const text =
-        `購屋款合計：甲方約 ${fmtAmt(a)} 元（${fmtP(aRatio)}），` +
-        `乙方約 ${fmtAmt(b)} 元（${fmtP(bRatio)}）。`;
+        `${label}：甲方約 ${a.toLocaleString('zh-TW')} 元（${formatPercent(aRatio)}），` +
+        `乙方約 ${b.toLocaleString('zh-TW')} 元（${formatPercent(bRatio)}）。`;
     return { a, b, text, aRatio, bRatio };
+};
+
+const downPaymentTotals = computed(() => {
+    return computePairTotals(
+        '購屋款合計',
+        ['downContractA', 'downStage1A', 'downStage2A', 'downAgencyA', 'handoverA'],
+        ['downContractB', 'downStage1B', 'downStage2B', 'downAgencyB', 'handoverB'],
+    );
 });
 
 const preMoveTotals = computed(() => {
-    const a =
-        (Number(form.decorationA) || 0) +
-        (Number(form.furnitureA) || 0) +
-        (Number(form.applianceA) || 0) +
-        (Number(form.inspectionA) || 0);
-    const b =
-        (Number(form.decorationB) || 0) +
-        (Number(form.furnitureB) || 0) +
-        (Number(form.applianceB) || 0) +
-        (Number(form.inspectionB) || 0);
-    const sum = a + b;
-    if (sum <= 0) {
-        return { a: 0, b: 0, text: '' };
-    }
-    const aRatio = sum > 0 ? (a / sum) * 100 : 0;
-    const bRatio = sum > 0 ? (b / sum) * 100 : 0;
-    const fmtP = (n) => `${n.toFixed(1).replace(/\.0$/, '')}%`;
-    const fmtAmt = (n) => n.toLocaleString('zh-TW');
-    const text =
-        `入住前支出合計：甲方約 ${fmtAmt(a)} 元（${fmtP(aRatio)}），` +
-        `乙方約 ${fmtAmt(b)} 元（${fmtP(bRatio)}）。`;
-    return { a, b, text, aRatio, bRatio };
+    return computePairTotals(
+        '入住前支出合計',
+        ['decorationA', 'furnitureA', 'applianceA', 'inspectionA'],
+        ['decorationB', 'furnitureB', 'applianceB', 'inspectionB'],
+    );
 });
 
 const miscTotals = computed(() => {
-    const a =
-        (Number(form.cleaningA) || 0) +
-        (Number(form.movingA) || 0);
-    const b =
-        (Number(form.cleaningB) || 0) +
-        (Number(form.movingB) || 0);
-    const sum = a + b;
-    if (sum <= 0) {
-        return { a: 0, b: 0, text: '' };
-    }
-    const aRatio = sum > 0 ? (a / sum) * 100 : 0;
-    const bRatio = sum > 0 ? (b / sum) * 100 : 0;
-    const fmtP = (n) => `${n.toFixed(1).replace(/\.0$/, '')}%`;
-    const fmtAmt = (n) => n.toLocaleString('zh-TW');
-    const text =
-        `其他雜項支出合計：甲方約 ${fmtAmt(a)} 元（${fmtP(aRatio)}），` +
-        `乙方約 ${fmtAmt(b)} 元（${fmtP(bRatio)}）。`;
-    return { a, b, text, aRatio, bRatio };
-});
-
-const loanTotals = computed(() => {
-    const a = Number(form.monthlyLoanA) || 0;
-    const b = Number(form.monthlyLoanB) || 0;
-    const sum = a + b;
-    if (sum <= 0) {
-        return { a: 0, b: 0, text: '' };
-    }
-    const aRatio = sum > 0 ? (a / sum) * 100 : 0;
-    const bRatio = sum > 0 ? (b / sum) * 100 : 0;
-    const fmtP = (n) => `${n.toFixed(1).replace(/\.0$/, '')}%`;
-    const fmtAmt = (n) => n.toLocaleString('zh-TW');
-    const text =
-        `每月貸款合計：甲方約 ${fmtAmt(a)} 元（${fmtP(aRatio)}），` +
-        `乙方約 ${fmtAmt(b)} 元（${fmtP(bRatio)}）。`;
-    return { a, b, text, aRatio, bRatio };
+    return computePairTotals(
+        '其他雜項支出合計',
+        ['cleaningA', 'movingA'],
+        ['cleaningB', 'movingB'],
+    );
 });
 
 const contributionSummary = computed(() => {
-    const total = Number(form.totalPrice) || 0;
+    const total = asNumber(form.totalPrice);
     const oneTimeA =
         downPaymentTotals.value.a +
         preMoveTotals.value.a +
@@ -799,119 +585,69 @@ const contributionSummary = computed(() => {
     };
 });
 
-watch(
-    () => [
-        form.loanType,
-        form.regularAmount,
-        form.regularRate,
-        form.regularYears,
-        form.monthlyShareA,
-        form.monthlyShareB,
-    ],
-    ([loanType, amount, rate, years, shareAInput, shareBInput]) => {
-        if (loanType !== 'regular') {
-            return;
-        }
-        const monthly = computeMonthlyPayment(amount, rate, years);
-        if (monthly <= 0) {
-            return;
-        }
-        const sA = Number(shareAInput) || 0;
-        const sB = Number(shareBInput) || 0;
-        let sum = sA + sB;
-        if (sum <= 0) {
-            sum = 100;
-        }
-        const shareA = sA / sum;
-        const shareB = sB / sum;
-        const aMonthly = Math.round(monthly * shareA);
-        const bMonthly = Math.round(monthly * shareB);
-        isAutoUpdatingMonthly.value = true;
-        form.monthlyLoanA = aMonthly;
-        form.monthlyLoanB = bMonthly;
-        isAutoUpdatingMonthly.value = false;
-    },
-);
+function buildContributionText() {
+    const summary = contributionSummary.value;
+    const parts = [];
 
-watch(
-    () => [
-        form.loanType,
-        form.youthAmount,
-        form.youthYears,
-        form.youthFirstRate,
-        form.youthSecondRate,
-        form.youthGeneralAmount,
-        form.youthGeneralRate,
-        form.youthGeneralYears,
-        form.monthlyShareA,
-        form.monthlyShareB,
-    ],
-    ([
-        loanType,
-        youthAmount,
-        youthYears,
-        youthFirstRate,
-        youthSecondRate,
-        youthGeneralAmount,
-        youthGeneralRate,
-        youthGeneralYears,
-        shareAInput,
-        shareBInput,
-    ]) => {
-        if (loanType !== 'youth') {
+    const addPairDetail = (label, a, b) => {
+        const va = asNumber(a);
+        const vb = asNumber(b);
+        if (va <= 0 && vb <= 0) {
             return;
         }
-        const baseYouthRate =
-            Number(youthSecondRate) || Number(youthFirstRate) || 0;
-        const youthMonthly = computeMonthlyPayment(
-            youthAmount,
-            baseYouthRate,
-            youthYears,
+        parts.push(
+            `${label}：甲方約新台幣 ${va.toLocaleString('zh-TW')} 元，乙方約新台幣 ${vb.toLocaleString(
+                'zh-TW',
+            )} 元。`,
         );
-        const generalMonthly = computeMonthlyPayment(
-            youthGeneralAmount,
-            youthGeneralRate,
-            youthGeneralYears,
-        );
-        const totalMonthly = youthMonthly + generalMonthly;
-        if (totalMonthly <= 0) {
-            return;
-        }
-        const sA = Number(shareAInput) || 0;
-        const sB = Number(shareBInput) || 0;
-        let sum = sA + sB;
-        if (sum <= 0) {
-            sum = 100;
-        }
-        const shareA = sA / sum;
-        const shareB = sB / sum;
-        const aMonthly = Math.round(totalMonthly * shareA);
-        const bMonthly = Math.round(totalMonthly * shareB);
-        isAutoUpdatingMonthly.value = true;
-        form.monthlyLoanA = aMonthly;
-        form.monthlyLoanB = bMonthly;
-        isAutoUpdatingMonthly.value = false;
-    },
-);
+    };
 
-watch(
-    () => [form.loanType, form.monthlyLoanA, form.monthlyLoanB],
-    ([loanType, a, b]) => {
-        if (!loanType || isAutoUpdatingMonthly.value) {
-            return;
+    if (summary.total > 0) {
+        parts.push(`(一) 房屋總價：新台幣 ${summary.total.toLocaleString('zh-TW')} 元。`);
+    }
+
+    if (summary.oneTimeSum > 0) {
+        parts.push(
+            `(二) 截至入住前累積出資：甲方約新台幣 ${summary.oneTimeA.toLocaleString(
+                'zh-TW',
+            )} 元（約 ${formatPercent(summary.aRatio)}），乙方約新台幣 ${summary.oneTimeB.toLocaleString(
+                'zh-TW',
+            )} 元（約 ${formatPercent(summary.bRatio)}）。`,
+        );
+
+        const anyDown = downPaymentTotals.value.a > 0 || downPaymentTotals.value.b > 0;
+        if (anyDown) {
+            parts.push('　1. 頭期款明細：');
+            addPairDetail('　　・簽約金', form.downContractA, form.downContractB);
+            addPairDetail('　　・工程款一', form.downStage1A, form.downStage1B);
+            addPairDetail('　　・工程款二', form.downStage2A, form.downStage2B);
+            addPairDetail('　　・代收款', form.downAgencyA, form.downAgencyB);
+            addPairDetail('　　・交屋款', form.handoverA, form.handoverB);
         }
-        const va = Number(a) || 0;
-        const vb = Number(b) || 0;
-        const sum = va + vb;
-        if (sum <= 0) {
-            return;
+
+        const anyPreMove = preMoveTotals.value.a > 0 || preMoveTotals.value.b > 0;
+        if (anyPreMove) {
+            parts.push('　2. 入住前支出明細：');
+            addPairDetail('　　・裝潢款', form.decorationA, form.decorationB);
+            addPairDetail('　　・家具', form.furnitureA, form.furnitureB);
+            addPairDetail('　　・家電', form.applianceA, form.applianceB);
+            addPairDetail('　　・驗屋費用', form.inspectionA, form.inspectionB);
         }
-        const ratioA = (va / sum) * 100;
-        const ratioB = (vb / sum) * 100;
-        form.monthlyShareA = Math.round(ratioA);
-        form.monthlyShareB = Math.round(ratioB);
-    },
-);
+
+        const anyMisc = miscTotals.value.a > 0 || miscTotals.value.b > 0;
+        if (anyMisc) {
+            parts.push('　3. 其他雜項支出明細：');
+            addPairDetail('　　・清潔費', form.cleaningA, form.cleaningB);
+            addPairDetail('　　・搬家費用', form.movingA, form.movingB);
+        }
+    }
+
+    if (!parts.length) {
+        return '本標的物總價款及雙方出資比例，由甲乙雙方依實際出資情形協議約定，原則上以出資比例為準。';
+    }
+
+    return parts.join('\n');
+}
 
 const previewText = computed(() => {
     const a = form.partnerA || '甲方（姓名待填）';
@@ -927,209 +663,7 @@ const previewText = computed(() => {
         form.buildingDetail.trim() ||
         '建物面積與車位：＿＿＿＿＿＿（如有車位或其他附屬設備，可於此載明）。';
 
-    const contributionText = (() => {
-        const summary = contributionSummary.value;
-        const fmtAmt = (n) => n.toLocaleString('zh-TW');
-        const fmtP = (n) => `${n.toFixed(1).replace(/\.0$/, '')}%`;
-        const parts = [];
-
-        const addPairDetail = (label, a, b, indent) => {
-            const va = Number(a) || 0;
-            const vb = Number(b) || 0;
-            if (va <= 0 && vb <= 0) {
-                return;
-            }
-            parts.push(
-                `${indent}${label}：甲方約新台幣 ${fmtAmt(
-                    va,
-                )} 元，乙方約新台幣 ${fmtAmt(vb)} 元。`,
-            );
-        };
-
-        if (summary.total > 0) {
-            parts.push(`(一) 房屋總價：新台幣 ${fmtAmt(summary.total)} 元。`);
-        }
-
-        if (summary.oneTimeSum > 0) {
-            parts.push(
-                `(二) 截至入住前累積出資：甲方約新台幣 ${fmtAmt(
-                    summary.oneTimeA,
-                )} 元（約 ${fmtP(
-                    summary.aRatio,
-                )}），乙方約新台幣 ${fmtAmt(
-                    summary.oneTimeB,
-                )} 元（約 ${fmtP(summary.bRatio)}）。`,
-            );
-
-            const anyDown =
-                (Number(form.downContractA) || 0) +
-                (Number(form.downContractB) || 0) +
-                (Number(form.downStage1A) || 0) +
-                (Number(form.downStage1B) || 0) +
-                (Number(form.downStage2A) || 0) +
-                (Number(form.downStage2B) || 0) +
-                (Number(form.downAgencyA) || 0) +
-                (Number(form.downAgencyB) || 0) +
-                (Number(form.handoverA) || 0) +
-                (Number(form.handoverB) || 0) >
-                0;
-            if (anyDown) {
-                parts.push('　1. 頭期款明細：');
-                addPairDetail(
-                    '　　・簽約金',
-                    form.downContractA,
-                    form.downContractB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・工程款一',
-                    form.downStage1A,
-                    form.downStage1B,
-                    '',
-                );
-                addPairDetail(
-                    '　　・工程款二',
-                    form.downStage2A,
-                    form.downStage2B,
-                    '',
-                );
-                addPairDetail(
-                    '　　・代收款',
-                    form.downAgencyA,
-                    form.downAgencyB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・交屋款',
-                    form.handoverA,
-                    form.handoverB,
-                    '',
-                );
-            }
-
-            const anyPreMove =
-                (Number(form.decorationA) || 0) +
-                (Number(form.decorationB) || 0) +
-                (Number(form.furnitureA) || 0) +
-                (Number(form.furnitureB) || 0) +
-                (Number(form.applianceA) || 0) +
-                (Number(form.applianceB) || 0) +
-                (Number(form.inspectionA) || 0) +
-                (Number(form.inspectionB) || 0) >
-                0;
-            if (anyPreMove) {
-                parts.push('　2. 入住前支出明細：');
-                addPairDetail(
-                    '　　・裝潢款',
-                    form.decorationA,
-                    form.decorationB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・家具',
-                    form.furnitureA,
-                    form.furnitureB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・家電',
-                    form.applianceA,
-                    form.applianceB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・驗屋費用',
-                    form.inspectionA,
-                    form.inspectionB,
-                    '',
-                );
-            }
-
-            const anyMisc =
-                (Number(form.cleaningA) || 0) +
-                (Number(form.cleaningB) || 0) +
-                (Number(form.movingA) || 0) +
-                (Number(form.movingB) || 0) >
-                0;
-            if (anyMisc) {
-                parts.push('　3. 其他雜項支出明細：');
-                addPairDetail(
-                    '　　・清潔費',
-                    form.cleaningA,
-                    form.cleaningB,
-                    '',
-                );
-                addPairDetail(
-                    '　　・搬家費用',
-                    form.movingA,
-                    form.movingB,
-                    '',
-                );
-            }
-        }
-
-        const monthlyA = Number(loanTotals.value.a) || 0;
-        const monthlyB = Number(loanTotals.value.b) || 0;
-        if (monthlyA > 0 || monthlyB > 0) {
-            const loanYears = 30;
-            const months = loanYears * 12;
-            const totalLoanA = monthlyA * months;
-            const totalLoanB = monthlyB * months;
-            const overallA = summary.oneTimeA + totalLoanA;
-            const overallB = summary.oneTimeB + totalLoanB;
-            const overallSum = overallA + overallB;
-            const overallRatioA =
-                overallSum > 0 ? (overallA / overallSum) * 100 : 0;
-            const overallRatioB =
-                overallSum > 0 ? (overallB / overallSum) * 100 : 0;
-
-            parts.push(
-                `(三) 若依目前每月貸款分擔情形持續繳納 ${loanYears} 年，概算雙方出資約為甲方新台幣 ${fmtAmt(
-                    overallA,
-                )} 元（約 ${fmtP(
-                    overallRatioA,
-                )}），乙方新台幣 ${fmtAmt(
-                    overallB,
-                )} 元（約 ${fmtP(overallRatioB)}），其中：`,
-            );
-
-            if (summary.oneTimeSum > 0) {
-                parts.push(
-                    `　1. 入住前之總出資：約甲方新台幣 ${fmtAmt(
-                        summary.oneTimeA,
-                    )} 元（約 ${fmtP(
-                        summary.aRatio,
-                    )}），乙方新台幣 ${fmtAmt(
-                        summary.oneTimeB,
-                    )} 元（約 ${fmtP(summary.bRatio)}）。`,
-                );
-            }
-
-            const loanSum = totalLoanA + totalLoanB;
-            if (loanSum > 0) {
-                const loanRatioA =
-                    loanSum > 0 ? (totalLoanA / loanSum) * 100 : 0;
-                const loanRatioB =
-                    loanSum > 0 ? (totalLoanB / loanSum) * 100 : 0;
-                const index = summary.oneTimeSum > 0 ? 2 : 1;
-                parts.push(
-                    `　${index}. 貸款部分累積出資：約甲方新台幣 ${fmtAmt(
-                        totalLoanA,
-                    )} 元（約 ${fmtP(
-                        loanRatioA,
-                    )}），乙方新台幣 ${fmtAmt(
-                        totalLoanB,
-                    )} 元（約 ${fmtP(loanRatioB)}）。`,
-                );
-            }
-        }
-
-        if (!parts.length) {
-            return '本標的物總價款及雙方出資比例，由甲乙雙方依實際出資情形協議約定，原則上以出資比例為準。';
-        }
-
-        return parts.join('\n');
-    })();
+    const contributionText = buildContributionText();
 
     const ownershipText =
         form.ownership.trim() ||
@@ -1138,6 +672,15 @@ const previewText = computed(() => {
     const loanText =
         form.loan.trim() ||
         '如需辦理銀行貸款，貸款總額由雙方共同決定，每月本息依出資比例或另行約定之比例分擔；如一方代為繳納，他方應返還其代墊款項，必要時得約定合理利息。';
+    const firstYearLoanTotal = asNumber(form.monthlyLoanA) + asNumber(form.monthlyLoanB);
+    const afterExitLoanTotal = asNumber(form.monthlyLoanAfterExitA) + asNumber(form.monthlyLoanAfterExitB);
+    let loanBurdenText = '';
+    if (form.loanPlan === 'regular' && firstYearLoanTotal > 0) {
+        loanBurdenText = `\n貸款方案：一般首購，適用年利率 ${asNumber(form.regularLoanRate).toFixed(3)}%。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元。實際金額仍以銀行核貸及計息結果為準。`;
+    }
+    if (form.loanPlan === 'youth' && (firstYearLoanTotal > 0 || afterExitLoanTotal > 0)) {
+        loanBurdenText = `\n貸款方案：新青安 3.0，前 3 年優惠年利率 ${asNumber(form.youthPreferentialRate).toFixed(3)}%，補貼完全退場後年利率 ${asNumber(form.youthOriginalRate).toFixed(3)}%，搭配之一般貸款年利率 ${asNumber(form.generalLoanRate).toFixed(3)}%。第一年每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；利息補貼完全退場後，甲方約新台幣 ${asNumber(form.monthlyLoanAfterExitA).toLocaleString('zh-TW')} 元、乙方約新台幣 ${asNumber(form.monthlyLoanAfterExitB).toLocaleString('zh-TW')} 元。實際金額仍以銀行核貸及計息結果為準。`;
+    }
 
     const expensesText =
         form.expenses.trim() ||
@@ -1174,7 +717,7 @@ ${contributionText}
 ${ownershipText}
 
 四、貸款責任
-${loanText}
+${loanText}${loanBurdenText}
 
 五、日常費用負擔
 ${expensesText}
@@ -1196,108 +739,26 @@ ${breachText}
 為提升本協議之證明力與安定性，強烈建議雙方攜帶本協議內容洽公證人，依實際需求調整條文並辦理公證。`;
 });
 
-const lastSavedText = computed(() => {
-    if (!lastSavedAt.value) {
-        return '';
-    }
-    const date = new Date(lastSavedAt.value);
-    if (Number.isNaN(date.getTime())) {
-        return '';
-    }
-    const pad = (n) => n.toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const month = pad(date.getMonth() + 1);
-    const day = pad(date.getDate());
-    const hours = pad(date.getHours());
-    const minutes = pad(date.getMinutes());
-    return `${year}/${month}/${day} ${hours}:${minutes}`;
+const {
+    downloading,
+    error,
+    lastSavedText,
+    onDownload,
+    onSaveDraft,
+    saving,
+    showFloatingSave,
+} = useDocumentDraft({
+    type: documentMeta.type,
+    title: documentMeta.draftTitle,
+    form,
+    previewText,
+    afterLoad: applyLoanCalculatorResult,
 });
-
-async function onSaveDraft() {
-    if (saving.value) {
-        return;
-    }
-    saving.value = true;
-    error.value = '';
-    try {
-        const structuredData = JSON.parse(JSON.stringify(form));
-        const payload = {
-            title: '共同購屋協議',
-            structuredData,
-            draftText: previewText.value,
-            status: 'DRAFT',
-        };
-        let response;
-        if (documentId.value) {
-            response = await axios.patch(`/api/documents/${documentId.value}`, payload);
-        } else {
-            response = await axios.post('/api/documents', {
-                type: 'JOINT_PURCHASE',
-                ...payload,
-            });
-        }
-        const doc = response && response.data;
-        if (doc && doc._id) {
-            documentId.value = doc._id;
-        }
-        if (doc && doc.updatedAt) {
-            lastSavedAt.value = doc.updatedAt;
-        }
-    } catch (e) {
-        console.error(e);
-        error.value = '儲存失敗，請稍後再試。';
-    } finally {
-        saving.value = false;
-    }
-}
-
-async function loadDraft() {
-    try {
-        const response = await axios.get('/api/documents');
-        const docs = Array.isArray(response.data) ? response.data : [];
-        const doc = docs.find((d) => d.type === 'JOINT_PURCHASE');
-        if (!doc) {
-            return;
-        }
-        documentId.value = doc._id;
-        if (doc.updatedAt) {
-            lastSavedAt.value = doc.updatedAt;
-        }
-        const data = doc.structuredData || {};
-        Object.keys(data).forEach((key) => {
-            if (Object.prototype.hasOwnProperty.call(form, key)) {
-                form[key] = data[key];
-            }
-        });
-    } catch (e) {
-        console.error(e);
-    }
-}
-
-onMounted(() => {
-    if (typeof window !== 'undefined') {
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        handleScroll();
-    }
-    loadDraft();
-});
-
-onUnmounted(() => {
-    if (typeof window !== 'undefined') {
-        window.removeEventListener('scroll', handleScroll);
-    }
-});
-
-async function onDownload() {
-    downloading.value = true;
-    error.value = '';
-    try {
-        const title = '共同購屋協議';
-        await downloadDocumentPdf({ type: 'JOINT_PURCHASE', title, content: previewText.value });
-    } catch (e) {
-        error.value = '下載 PDF 失敗，請稍後再試。';
-    } finally {
-        downloading.value = false;
-    }
-}
 </script>
+
+<style scoped>
+.compact-rate-field {
+    width: 11.5rem;
+    max-width: 100%;
+}
+</style>

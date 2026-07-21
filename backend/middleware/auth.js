@@ -1,21 +1,22 @@
 const jwt = require('jsonwebtoken');
+const getJwtSecret = require('../utils/jwtSecret');
+const sendError = require('../utils/httpError');
 
 function auth(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: 'Unauthorized' });
+        return sendError(res, 401, 'Unauthorized');
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, getJwtSecret());
         req.user = { id: decoded.id };
         next();
     } catch (err) {
-        return res.status(401).json({ message: 'Invalid token' });
+        return sendError(res, 401, 'Invalid token');
     }
 }
 
 module.exports = auth;
-
