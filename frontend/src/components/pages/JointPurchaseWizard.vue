@@ -31,6 +31,10 @@
                         </span>
                     </button>
                 </div>
+                <div v-if="error" class="wizard-action-error mt-2" role="alert">
+                    <i class="mdi mdi-alert-circle-outline" aria-hidden="true"></i>
+                    <span>{{ error }}</span>
+                </div>
             </div>
         </div>
         <div class="row">
@@ -363,7 +367,6 @@
                             </div>
                         </div>
 
-                        <p v-if="error" class="text-danger mt-2 mb-0">{{ error }}</p>
                     </div>
                 </div>
             </div>

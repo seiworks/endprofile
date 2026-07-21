@@ -180,22 +180,25 @@
 .login-success {
     margin-top: 14px;
     padding: 0.8rem 0.95rem;
-    border-radius: 0.85rem;
+    border-radius: 0.65rem;
     font-size: 0.9rem;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.5;
+    box-shadow: 0 0.35rem 1rem rgba(35, 24, 49, 0.14);
 }
 
 .login-error {
-    border: 1px solid rgba(255, 199, 199, 0.72);
-    background: rgba(92, 8, 22, 0.88);
-    color: #fff4f4;
+    border: 1px solid rgba(137, 48, 64, 0.18);
+    border-left: 3px solid #b84a5f;
+    background: rgba(255, 247, 248, 0.96);
+    color: #742536;
 }
 
 .login-success {
-    border: 1px solid rgba(181, 255, 199, 0.7);
-    background: rgba(10, 82, 49, 0.88);
-    color: #f1fff4;
+    border: 1px solid rgba(34, 112, 76, 0.18);
+    border-left: 3px solid #398866;
+    background: rgba(246, 255, 250, 0.96);
+    color: #235e47;
 }
 
 .login-footer-text {

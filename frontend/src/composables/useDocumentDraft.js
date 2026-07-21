@@ -123,6 +123,7 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         try {
             await downloadDocumentPdf({ type, title, content: previewText.value });
         } catch (e) {
+            console.error('PDF download failed:', e);
             error.value = '下載 PDF 失敗，請稍後再試。';
         } finally {
             downloading.value = false;

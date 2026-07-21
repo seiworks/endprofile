@@ -1,3 +1,6 @@
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
+
 const SIGNATURES = {
     WILL: ['立遺囑人簽名／身分證字號：______________________________'],
     COHABITATION: ['甲方簽名／身分證字號：______________________________', '乙方簽名／身分證字號：______________________________'],
@@ -28,10 +31,6 @@ function safeFilename(value) {
 }
 
 export async function downloadDocumentPdf({ type, title, content }) {
-    const [{ PDFDocument, rgb }, { default: fontkit }] = await Promise.all([
-        import('pdf-lib'),
-        import('@pdf-lib/fontkit'),
-    ]);
     const pdf = await PDFDocument.create();
     pdf.registerFontkit(fontkit);
     const fontResponse = await fetch('/fonts/NotoSansTC-Regular.otf', { cache: 'force-cache' });
@@ -82,8 +81,11 @@ export async function downloadDocumentPdf({ type, title, content }) {
     const link = document.createElement('a');
     link.href = url;
     link.download = `${safeFilename(title)}_${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.pdf`;
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    // Safari and some Chromium environments start consuming the Blob URL after
+    // the synthetic click returns. Revoking it immediately can cancel silently.
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }

@@ -136,6 +136,32 @@
     font-size: 18px;
 }
 
+.wizard-action-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+    max-width: 22rem;
+    margin-left: auto;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid rgba(137, 48, 64, 0.18);
+    border-left: 3px solid #b84a5f;
+    border-radius: 0.55rem;
+    background: rgba(255, 247, 248, 0.96);
+    color: #742536;
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: left;
+    box-shadow: 0 0.35rem 1rem rgba(35, 24, 49, 0.14);
+}
+
+.wizard-action-error i {
+    flex: 0 0 auto;
+    margin-top: 0.05rem;
+    color: #b84a5f;
+    font-size: 1rem;
+}
+
 @keyframes feather-breathe {
     0% {
         text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
