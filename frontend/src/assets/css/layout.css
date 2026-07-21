@@ -1,0 +1,14 @@
+.wizard-container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2rem 0 2.5rem;
+    animation: fadeInUp 0.35s ease-out both;
+}
+
+/* save-button-position 已移到 base.css 做全站共用 */
+.save-button-position {
+    position: fixed !important;
+    bottom: 8vh;
+    right: 7rem;
+    cursor: pointer;
+}

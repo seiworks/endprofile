@@ -1,0 +1,99 @@
+.form-label {
+    font-weight: 500;
+}
+
+.btn-primary {
+    min-width: 120px;
+}
+
+.btn {
+    border-radius: 999px;
+    font-weight: 500;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-outline-primary {
+    border-width: 0;
+    background: linear-gradient(90deg, #1f4b8f, #14345f);
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(6, 34, 90, 0.6);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-outline-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 22px rgba(6, 34, 90, 0.75);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-outline-primary:disabled {
+    background: #5b739c;
+    color: #dbe5ff;
+    box-shadow: none;
+    transform: none;
+}
+
+.app-navbar {
+    background-color: rgba(10, 32, 77, 0.9) !important;
+    box-shadow: 0 4px 12px rgba(3, 15, 40, 0.55);
+    backdrop-filter: blur(12px);
+}
+
+.app-navbar .navbar-brand,
+.app-navbar .nav-link {
+    color: #fefcf5 !important;
+}
+
+.app-navbar .nav-link.router-link-active {
+    color: #ffe29b !important;
+}
+
+.app-navbar .btn-link.nav-link {
+    color: #fefcf5 !important;
+}
+
+.nav-feather-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 6px;
+    color: #ffffff;
+    animation: feather-breathe 2.6s ease-in-out infinite;
+}
+
+.nav-feather-icon i {
+    font-size: 20px;
+}
+
+.nav-brand-text {
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.pdf-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pdf-icon-btn i {
+    font-size: 18px;
+}
+
+@keyframes feather-breathe {
+    0% {
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+
+    50% {
+        text-shadow: 0 0 19px rgba(255, 255, 255, 0.95);
+    }
+
+    100% {
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+}
