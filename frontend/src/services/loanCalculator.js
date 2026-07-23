@@ -12,6 +12,27 @@ export function calculateMonthlyPayment(principal, annualRate, years) {
     return (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
 }
 
+export function calculateMonthlyPaymentWithGrace(
+    principal,
+    annualRate,
+    years,
+    graceYears = 0,
+    elapsedMonths = 0,
+) {
+    const amount = Math.max(asFiniteNumber(principal), 0);
+    const totalMonths = Math.max(Math.round(asFiniteNumber(years) * 12), 0);
+    const elapsed = Math.max(Math.round(asFiniteNumber(elapsedMonths)), 0);
+    if (!amount || !totalMonths || elapsed >= totalMonths) return 0;
+
+    const graceMonths = Math.min(
+        Math.max(Math.round(asFiniteNumber(graceYears) * 12), 0),
+        Math.max(totalMonths - 12, 0),
+    );
+    const monthlyRate = Math.max(asFiniteNumber(annualRate), 0) / 100 / 12;
+    if (elapsed < graceMonths) return amount * monthlyRate;
+    return calculateMonthlyPayment(amount, annualRate, (totalMonths - graceMonths) / 12);
+}
+
 export function calculateRemainingBalance(principal, annualRate, monthlyAmount, paidMonths) {
     const amount = Math.max(asFiniteNumber(principal), 0);
     const rate = Math.max(asFiniteNumber(annualRate), 0) / 100 / 12;
@@ -26,9 +47,14 @@ export function calculateRemainingBalance(principal, annualRate, monthlyAmount, 
 export function calculateYouthStages({
     youthAmount,
     youthYears,
+    youthGraceYears = 0,
     preferentialRate,
     originalRate,
     generalMonthly = 0,
+    generalAmount = 0,
+    generalRate = 0,
+    generalYears = 0,
+    generalGraceYears = 0,
 }) {
     const totalMonths = Math.max(asFiniteNumber(youthYears) * 12, 0);
     const baseRate = asFiniteNumber(preferentialRate);
@@ -36,16 +62,34 @@ export function calculateYouthStages({
     const rates = [baseRate, baseRate, baseRate, baseRate + 0.125, baseRate + 0.25, baseRate + 0.375, asFiniteNumber(originalRate)];
 
     return rates.map((rate, index) => {
+        const elapsedMonths = index * 12;
         const remainingMonths = Math.max(totalMonths - index * 12, 0);
-        const youthMonthly = remainingMonths
-            ? calculateMonthlyPayment(balance, rate, remainingMonths / 12)
-            : 0;
+        const graceMonths = Math.min(
+            Math.max(Math.round(asFiniteNumber(youthGraceYears) * 12), 0),
+            Math.max(totalMonths - 12, 0),
+        );
+        const youthMonthly = !remainingMonths
+            ? 0
+            : elapsedMonths < graceMonths
+                ? balance * Math.max(asFiniteNumber(rate), 0) / 100 / 12
+                : calculateMonthlyPayment(balance, rate, remainingMonths / 12);
+        const currentGeneralMonthly = asFiniteNumber(generalAmount) > 0
+            ? calculateMonthlyPaymentWithGrace(
+                generalAmount,
+                generalRate,
+                generalYears,
+                generalGraceYears,
+                elapsedMonths,
+            )
+            : asFiniteNumber(generalMonthly);
         const stage = {
             year: index + 1,
             rate,
-            totalMonthly: Math.round(youthMonthly + asFiniteNumber(generalMonthly)),
+            totalMonthly: Math.round(youthMonthly + currentGeneralMonthly),
         };
-        balance = calculateRemainingBalance(balance, rate, youthMonthly, Math.min(12, remainingMonths));
+        if (elapsedMonths >= graceMonths) {
+            balance = calculateRemainingBalance(balance, rate, youthMonthly, Math.min(12, remainingMonths));
+        }
         return stage;
     });
 }

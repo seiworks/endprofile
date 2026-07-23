@@ -1,129 +1,77 @@
-# EndProfile
+# EndProfile 正式版
 
-EndProfile 是一個人生規劃文件工具，提供邀請制帳號、零知識加密草稿、瀏覽器端 PDF 下載，以及使用者自持復原金鑰的密碼重設功能。
+EndProfile 正式版是只在個人電腦本機執行的人生規劃文件工具，提供邀請制帳號、五種文件 Wizard、MongoDB 草稿保存與瀏覽器端 PDF 下載。
 
 ## Features
 
-- 帳號註冊與登入
-- 邀請碼註冊與 HttpOnly Cookie 登入
-- 使用者自持復原金鑰的密碼重設（管理員無法代為解密或復原文件）
-- 五種文件 Wizard：
-  - 預立遺囑
-  - 授權書／同居協議
-  - 共同購屋協議
-  - 生活授權
-  - 意定監護契約
-- 文件草稿儲存與最近編輯時間
-- PDF 下載
-- 獨立每月貸款負擔試算（一般首購、新青安 3.0 逐年退場與雙方分攤），結果可套用至共同購屋協議
-- 文件內容在瀏覽器加密後才傳送到伺服器
+- 邀請碼註冊與帳號登入
+- 登入 Session 最長保留 7 天，沒有 30 分鐘閒置登出
+- 本機忘記密碼功能：使用已註冊 Email 設定新密碼
+- 五種文件 Wizard：預立遺囑、授權書／同居協議、共同購屋協議、生活授權、意定監護契約
+- 文件表單、產生內文、狀態與最近編輯時間保存
+- 切換文件或離開文件編輯頁面前，自動保存有變更的內容
+- 閒置 30 分鐘後自動保存有變更的文件（不會自動登出）
+- 瀏覽器端 PDF 下載
+- 每月貸款負擔試算，支援 0–5 年寬限期、依帳號在瀏覽器本機保存房屋總價、自訂的一般貸款利率／年限及手動貸款總額，並可將結果套用至共同購屋協議
+
+文件的 `structuredData` 與 `draftText` 會以明文保存於本機 MongoDB。此設計只適合個人電腦，不可直接公開到網際網路。
 
 ## Tech Stack
 
-Frontend:
+Frontend: Vue 3、Vite、Vue Router、Vuex、Bootstrap、Vuetify、Axios、PDF-lib。
 
-- Vue 3
-- Vite
-- Vue Router
-- Vuex
-- Bootstrap
-- Vuetify
-- Axios
-
-Backend:
-
-- Node.js
-- Express
-- MongoDB
-- Mongoose 8
-- JWT
-- Web Crypto API / PDF-lib
-
-## Project Structure
-
-```text
-backend/
-  models/
-  routes/
-  middleware/
-  fonts/
-
-frontend/
-  src/components/pages/
-  src/composables/
-  src/constants/
-  src/router/
-  src/services/
-  src/store/
-```
+Backend: Node.js、Express、MongoDB、Mongoose 8、JWT。
 
 ## Local Setup
 
-Install backend dependencies:
+安裝依賴：
 
 ```bash
 cd backend
 npm install
-```
 
-Install frontend dependencies:
-
-```bash
-cd frontend
+cd ../frontend
 npm install
 ```
 
-Start MongoDB locally before running the backend. The default MongoDB URI is:
+先啟動本機 MongoDB，預設連線為：
 
 ```text
 mongodb://localhost:27017/endprofile
 ```
 
-Start backend:
+啟動後端：
 
 ```bash
 cd backend
 npm start
 ```
 
-Run backend smoke check:
-
-```bash
-cd backend
-npm run smoke
-```
-
-Start frontend:
+啟動前端：
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Vite proxies frontend `/api` requests to:
-
-```text
-http://localhost:4001
-```
-
-The local frontend runs at `http://localhost:5174` by default.
+- 前端：`http://localhost:5174`
+- 後端：`http://localhost:4001`
+- Vite 將 `/api` 轉送到後端
 
 ## Environment Variables
 
-Create `backend/.env` as needed.
+`backend/.env`：
 
 ```text
 MONGODB_URI=mongodb://localhost:27017/endprofile
-JWT_SECRET=<YOUR_LONG_RANDOM_SECRET>
+JWT_SECRET=<至少 32 bytes 的隨機值>
 PORT=4001
-FRONTEND_ORIGIN=https://your-frontend.example.com
-REGISTRATION_INVITE_CODE=<YOUR_PRIVATE_INVITE_CODE>
+REGISTRATION_INVITE_CODE=<本機邀請碼>
 ```
 
-Notes:
-
-- `JWT_SECRET` is required in every environment. Keep it in `backend/.env` and never commit it.
-- `REGISTRATION_INVITE_CODE` 未設定時不開放新帳號註冊。
+- `JWT_SECRET` 與邀請碼不可提交到 Git。
+- `REGISTRATION_INVITE_CODE` 未設定時不開放註冊。
+- 本機開發不需要設定 `FRONTEND_ORIGIN`。
 
 ## Main API Routes
 
@@ -132,6 +80,7 @@ Auth:
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/reset-password`
+- `POST /api/auth/logout`
 
 User:
 
@@ -143,94 +92,28 @@ Documents:
 - `GET /api/documents/:id`
 - `POST /api/documents`
 - `PATCH /api/documents/:id`
+- `POST /api/documents/:id/migrate`（僅供舊密文轉換並保留原編輯時間）
 
-EndProfile:
+## Existing encrypted documents
 
-- `GET /api/endprofile`
-- `PATCH /api/endprofile`
+舊版本以 AES-256-GCM 加密的文件仍保留相容欄位。使用者以原密碼登入時，瀏覽器會嘗試解密並轉存成明文 `structuredData`／`draftText`。轉換成功後會移除該文件的 `encryptedPayload`，並保留轉換前的 `updatedAt`。
 
-## Troubleshooting
+如果舊密碼已遺失且沒有復原金鑰，舊密文在技術上無法還原；新建文件不受影響。
 
-If backend only prints a dotenv message and does not continue, check the installed Mongoose version:
-
-```bash
-cd backend
-node -e "console.log(require('mongoose').version)"
-```
-
-This project currently uses Mongoose 8.x.
-
-If backend prints `MongoDB connection error`, make sure MongoDB is running locally or set `MONGODB_URI` in `backend/.env`.
-
-Use `node server.js` or `npm start` for backend startup. `npx node server.js` is not needed.
-
-## Development Notes
-
-- Follow `AGENTS.md` and the shared SEI rules in the parent `01_aiPJS` folder.
-- Do not modify `.env` unless explicitly requested.
-- Keep API contracts compatible with existing frontend usage.
-- 復原金鑰只在建立保險庫時顯示；遺失密碼與復原金鑰後，任何人都無法解密文件。
-
-## Friend-Only Production Deployment
-
-Build and run the application as one same-origin service with the root `Dockerfile`. The reverse proxy or hosting platform must provide HTTPS.
+## Verification
 
 ```bash
-docker build -t endprofile .
-docker run --env-file backend/.env -p 4001:4001 endprofile
+npm run verify
 ```
 
-Required production environment variables:
+包含後端 smoke test、安全整合測試、舊密文轉換測試、貸款試算測試及前端 production build。
 
-- `NODE_ENV=production`
-- `MONGODB_URI`: use a dedicated, least-privilege MongoDB user and TLS connection
-- `JWT_SECRET`: at least 32 random bytes; never reuse the invite code
-- `REGISTRATION_INVITE_CODE`: share privately only with invited friends
-- `FRONTEND_ORIGIN`: exact public HTTPS origin, without a trailing slash
-- `PORT`: the provided Docker and Render production configuration uses `4001`
+## Security Notes
 
-Generate independent secrets, for example:
+- 只綁定 localhost 使用，不要透過 port forwarding、公開 IP 或反向代理對外開放。
+- MongoDB 必須只允許本機連線，不能公開 `27017`。
+- Session cookie 為 `HttpOnly`、`SameSite=Strict`，最長 7 天；重設密碼與登出會撤銷既有 Session。
+- 密碼以 bcrypt hash 保存，但文件內容與 MongoDB 備份是明文敏感資料。
+- 建議啟用 FileVault／BitLocker，並妥善保管 MongoDB 備份與下載的 PDF。
 
-```bash
-openssl rand -base64 48
-```
-
-Security properties:
-
-- Document content is encrypted in the browser with AES-256-GCM before upload.
-- The server stores only encrypted document envelopes and wrapped vault keys.
-- Sessions use `HttpOnly`, `Secure`, `SameSite=Strict` cookies in production.
-- Password reset and manual logout revoke all previously issued sessions for that account; authenticated API failures and 30 minutes of inactivity lock the browser vault.
-- Password recovery requires the user's recovery key and an ECDSA challenge signature.
-- PDF files are generated in the browser; plaintext document content is not sent to the PDF API.
-- Production startup fails if secrets are missing, too short, reused, or still contain example placeholders.
-- The HTTP service starts only after MongoDB connects, and `/api/health` reports database readiness.
-
-Before inviting users, create encrypted MongoDB backups, test restoring one backup, and verify `/api/health` over HTTPS.
-
-For Render, connect the repository as a Blueprint and use `render.yaml`. Set the three prompted values (`MONGODB_URI`, `REGISTRATION_INVITE_CODE`, and `FRONTEND_ORIGIN`) in Render's secret settings. `FRONTEND_ORIGIN` must be the final Render or custom-domain HTTPS URL.
-
-After deployment, run the non-destructive production verification:
-
-```bash
-node scripts/verify-deployment.mjs https://your-endprofile-domain.example
-```
-
-Read [SECURITY.md](SECURITY.md) before sharing the invitation code. It documents visible metadata, user recovery responsibilities, backups, and the limits of zero-knowledge encryption.
-
-## Google Cloud Run
-
-Docker is optional. The root `package.json` supports Google Cloud Buildpacks, so Cloud Run can build directly from source:
-
-```bash
-gcloud run deploy endprofile \
-  --source . \
-  --region asia-east1 \
-  --allow-unauthenticated
-```
-
-Set `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET`, `REGISTRATION_INVITE_CODE`, and the final HTTPS `FRONTEND_ORIGIN` through Cloud Run. Store secrets in Secret Manager instead of source code or `.env`. The existing `Dockerfile` remains available when deterministic container builds are preferred.
-
-`PDF_FONT_PATH` is not used by the production application. PDF generation happens in the browser and the Chinese font is bundled at `frontend/public/fonts/NotoSansTC-Regular.otf`, which Vite copies into the production frontend.
-
-Password recovery does not require email: the user proves possession of the recovery key in the browser. If email notifications or recovery-page links are added later, use a transactional email provider's HTTPS API from Cloud Run; the recovery key is still required to decrypt documents and must never be emailed or sent to an automation webhook.
+詳見 [SECURITY.md](SECURITY.md)。

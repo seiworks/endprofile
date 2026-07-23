@@ -4,19 +4,15 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const getJwtSecret = require('../utils/jwtSecret');
 const sendError = require('../utils/httpError');
-const normalizeVaultMetadata = require('../utils/vaultMetadata');
 const crypto = require('crypto');
 const auth = require('../middleware/auth');
-const RecoveryChallenge = require('../models/RecoveryChallenge');
 
 const router = express.Router();
-const RECOVERY_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-function sessionCookie(token, rememberMe = false) {
+function sessionCookie(token) {
     const secure = process.env.NODE_ENV === 'production';
     const name = secure ? '__Host-endprofile_session' : 'endprofile_session';
-    const persistence = rememberMe ? '; Max-Age=604800' : '';
-    return `${name}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}${persistence}`;
+    return `${name}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict${secure ? '; Secure' : ''}; Max-Age=604800`;
 }
 
 function normalizeEmail(email) {
@@ -34,7 +30,7 @@ function safeEqual(left, right) {
 }
 
 router.post('/register', async (req, res) => {
-    const { email, password, name, vaultMetadata, inviteCode } = req.body;
+    const { email, password, name, inviteCode } = req.body;
     const normalizedEmail = normalizeEmail(email);
     const normalizedName = typeof name === 'string' ? name.trim() : '';
     if (!process.env.REGISTRATION_INVITE_CODE) {
@@ -44,8 +40,7 @@ router.post('/register', async (req, res) => {
         return sendError(res, 403, '邀請碼不正確');
     }
 
-    const safeVaultMetadata = normalizeVaultMetadata(vaultMetadata);
-    if (!normalizedEmail || typeof password !== 'string' || !normalizedName || !safeVaultMetadata) {
+    if (!normalizedEmail || typeof password !== 'string' || !normalizedName) {
         return sendError(res, 400, '缺少必要欄位');
     }
 
@@ -69,7 +64,6 @@ router.post('/register', async (req, res) => {
             email: normalizedEmail,
             passwordHash,
             name: normalizedName,
-            vaultMetadata: safeVaultMetadata,
         });
 
         return res.status(201).json({ id: user.id, email: user.email, name: user.name });
@@ -80,7 +74,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-    const { email, password, rememberMe } = req.body;
+    const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
     if (!normalizedEmail || typeof password !== 'string') {
@@ -99,13 +93,12 @@ router.post('/login', async (req, res) => {
         }
 
         const sessionVersion = Number(user.sessionVersion) || 0;
-        const persistentSession = rememberMe === true;
         const token = jwt.sign({ id: user.id, sv: sessionVersion }, getJwtSecret(), {
-            expiresIn: persistentSession ? '7d' : '8h',
+            expiresIn: '7d',
         });
 
         await User.updateOne({ _id: user.id }, { $set: { lastLoginAt: new Date() } });
-        res.setHeader('Set-Cookie', sessionCookie(token, persistentSession));
+        res.setHeader('Set-Cookie', sessionCookie(token));
 
         return res.json({
             user: { id: user.id, email: user.email, name: user.name },
@@ -126,61 +119,19 @@ router.post('/logout', auth, async (req, res) => {
     return res.status(204).end();
 });
 
-router.post('/recovery-challenge', async (req, res) => {
-    const normalizedEmail = normalizeEmail(req.body && req.body.email);
-    if (!normalizedEmail) return sendError(res, 400, '缺少 Email');
-    const user = await User.findOne({ email: normalizedEmail }).select('vaultMetadata');
-    if (!user || !user.vaultMetadata || !user.vaultMetadata.recoveryPublicKey) {
-        return sendError(res, 404, '找不到可復原的帳號');
-    }
-    const id = crypto.randomUUID();
-    const challenge = crypto.randomBytes(32).toString('base64');
-    await RecoveryChallenge.create({
-        challengeId: id,
-        userId: user.id,
-        challenge,
-        expiresAt: new Date(Date.now() + RECOVERY_CHALLENGE_TTL_MS),
-    });
-    return res.json({ id, challenge, vaultMetadata: user.vaultMetadata });
-});
-
 router.post('/reset-password', async (req, res) => {
-    const { challengeId, signature, password, vaultMetadata } = req.body || {};
-    const challengeRecord = await RecoveryChallenge.findOneAndDelete({
-        challengeId,
-        expiresAt: { $gt: new Date() },
-    });
-    if (!challengeRecord) {
-        return sendError(res, 400, '復原驗證已失效');
-    }
+    const normalizedEmail = normalizeEmail(req.body && req.body.email);
+    const { password } = req.body || {};
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) return sendError(res, 400, 'Email 格式不正確');
     if (typeof password !== 'string' || password.length < 12 || password.length > 72) {
         return sendError(res, 400, '密碼長度需為 12 至 72 碼');
     }
-    const safeMetadata = normalizeVaultMetadata(vaultMetadata);
-    if (!safeMetadata || typeof signature !== 'string') return sendError(res, 400, '復原資料格式不正確');
-    const user = await User.findById(challengeRecord.userId).select('+sessionVersion');
-    if (!user) return sendError(res, 400, '復原驗證失敗');
-    const oldMetadata = normalizeVaultMetadata(user.vaultMetadata);
-    if (!oldMetadata || safeMetadata.recoveryPublicKey !== oldMetadata.recoveryPublicKey
-        || JSON.stringify(safeMetadata.recoveryWrap) !== JSON.stringify(oldMetadata.recoveryWrap)) {
-        return sendError(res, 400, '復原金鑰資料不一致');
-    }
-    let verified = false;
-    try {
-        verified = crypto.verify(
-            'sha256', Buffer.from(challengeRecord.challenge, 'base64'),
-            { key: crypto.createPublicKey({ key: Buffer.from(oldMetadata.recoveryPublicKey, 'base64'), format: 'der', type: 'spki' }), dsaEncoding: 'ieee-p1363' },
-            Buffer.from(signature, 'base64'),
-        );
-    } catch {
-        verified = false;
-    }
-    if (!verified) return sendError(res, 401, '復原金鑰不正確');
+    const user = await User.findOne({ email: normalizedEmail }).select('+sessionVersion');
+    if (!user) return sendError(res, 404, '找不到此 Email 的帳號');
     user.passwordHash = await bcrypt.hash(password, 12);
-    user.vaultMetadata = { ...oldMetadata, passwordWrap: safeMetadata.passwordWrap };
     user.sessionVersion = (Number(user.sessionVersion) || 0) + 1;
     await user.save();
-    return res.json({ message: '密碼已安全更新' });
+    return res.json({ message: '密碼已更新，請重新登入' });
 });
 
 module.exports = router;

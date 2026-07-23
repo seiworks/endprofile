@@ -2,7 +2,6 @@ const assert = require('assert');
 
 const mongoose = require('mongoose');
 const getJwtSecret = require('../utils/jwtSecret');
-const normalizeVaultMetadata = require('../utils/vaultMetadata');
 
 require('../routes/auth');
 require('../routes/user');
@@ -23,17 +22,6 @@ delete process.env.JWT_SECRET;
 process.env.NODE_ENV = 'production';
 
 assert.throws(() => getJwtSecret(), /JWT_SECRET is required/);
-
-const wrap = { ciphertext: 'QUJDRA==', iv: 'QUJDRA==', salt: 'QUJDRA==' };
-assert.ok(normalizeVaultMetadata({
-    version: 1,
-    kdf: 'PBKDF2-SHA256',
-    iterations: 600000,
-    passwordWrap: wrap,
-    recoveryWrap: wrap,
-    recoveryPublicKey: 'QUJDRA==',
-}));
-assert.strictEqual(normalizeVaultMetadata({ version: 1 }), null);
 
 process.env.NODE_ENV = originalNodeEnv;
 if (originalJwtSecret) {

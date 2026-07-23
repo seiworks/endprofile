@@ -1,43 +1,35 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
-import { indexedDB } from 'fake-indexeddb';
-import {
-    createVault, decryptPayload, encryptPayload, forgetRememberedVault, isRememberedDevice,
-    lockVault, recoverVault, rememberVaultOnDevice, restoreRememberedVault,
-    signRecoveryChallenge, unlockVault,
-} from '../src/services/vault.js';
+import { decryptPayload, unlockVault } from '../src/services/vault.js';
 
-globalThis.indexedDB = indexedDB;
+const encoder = new TextEncoder();
+const toBase64 = (value) => Buffer.from(value).toString('base64');
+const password = 'correct horse battery staple';
+const salt = crypto.getRandomValues(new Uint8Array(16));
+const wrapIv = crypto.getRandomValues(new Uint8Array(12));
+const rawVaultKey = crypto.getRandomValues(new Uint8Array(32));
+const passwordMaterial = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveKey']);
+const wrappingKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 600000 },
+    passwordMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt'],
+);
+const wrappedKey = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: wrapIv }, wrappingKey, rawVaultKey);
+const metadata = {
+    iterations: 600000,
+    passwordWrap: { salt: toBase64(salt), iv: toBase64(wrapIv), ciphertext: toBase64(wrappedKey) },
+};
 
-const vault = await createVault('correct horse battery staple');
-const envelope = await encryptPayload({ private: '只有使用者看得到' });
-assert.deepEqual(await decryptPayload(envelope), { private: '只有使用者看得到' });
-const largePayload = { draftText: 'x'.repeat(180000) };
-const largeEnvelope = await encryptPayload(largePayload);
-assert.deepEqual(await decryptPayload(largeEnvelope), largePayload);
-await rememberVaultOnDevice('user-1');
-assert.equal(isRememberedDevice(), true);
-lockVault();
-assert.equal(await restoreRememberedVault('user-1'), true);
-assert.deepEqual(await decryptPayload(envelope), { private: '只有使用者看得到' });
-await forgetRememberedVault();
-lockVault();
-assert.equal(await restoreRememberedVault('user-1'), false);
-await unlockVault('correct horse battery staple', vault.metadata);
-lockVault();
-await assert.rejects(() => unlockVault('wrong password', vault.metadata));
-await unlockVault('correct horse battery staple', vault.metadata);
-assert.deepEqual(await decryptPayload(envelope), { private: '只有使用者看得到' });
-lockVault();
-const recoveredMetadata = await recoverVault(vault.recoveryKey, 'a different strong password', vault.metadata);
-lockVault();
-await unlockVault('a different strong password', recoveredMetadata);
-assert.deepEqual(await decryptPayload(envelope), { private: '只有使用者看得到' });
-const challenge = crypto.randomBytes(32);
-const signature = await signRecoveryChallenge(vault.recoveryKey, challenge.toString('base64'));
-assert.equal(crypto.verify(
-    'sha256', challenge,
-    { key: crypto.createPublicKey({ key: Buffer.from(vault.metadata.recoveryPublicKey, 'base64'), format: 'der', type: 'spki' }), dsaEncoding: 'ieee-p1363' },
-    Buffer.from(signature, 'base64'),
-), true);
-console.log('Vault smoke check passed');
+const legacyKey = await crypto.subtle.importKey('raw', rawVaultKey, { name: 'AES-GCM' }, false, ['encrypt']);
+const documentIv = crypto.getRandomValues(new Uint8Array(12));
+const plaintext = { structuredData: { name: '舊文件' }, draftText: '等待轉換的密文內容' };
+const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: documentIv }, legacyKey, encoder.encode(JSON.stringify(plaintext)),
+);
+const envelope = { version: 1, algorithm: 'AES-256-GCM', iv: toBase64(documentIv), ciphertext: toBase64(ciphertext) };
+
+await assert.rejects(() => unlockVault('wrong password', metadata));
+await unlockVault(password, metadata);
+assert.deepEqual(await decryptPayload(envelope), plaintext);
+console.log('Legacy encrypted document migration smoke check passed');

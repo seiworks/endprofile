@@ -8,11 +8,49 @@
 /* 各文件共用的浮動儲存按鈕 */
 .save-button-position {
     position: fixed !important;
-    right: max(1.5rem, calc((100vw - 1080px) / 2));
+    right: max(1.5rem, calc((100vw - 1080px) / 2 - 5rem));
     bottom: max(1.5rem, env(safe-area-inset-bottom));
     z-index: 1030;
     min-height: 2.75rem;
     cursor: pointer;
+}
+
+.save-button-position::after {
+    content: '';
+    position: absolute;
+    inset: -0.4rem;
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    border-radius: inherit;
+    box-shadow:
+        0 0 0.45rem rgba(255, 255, 255, 0.82),
+        0 0 1.1rem rgba(255, 255, 255, 0.58);
+    pointer-events: none;
+    animation: save-button-breathe 2s ease-in-out infinite;
+}
+
+.save-button-position:disabled::after {
+    animation: none;
+    opacity: 0;
+}
+
+@keyframes save-button-breathe {
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.96);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .save-button-position::after {
+        animation: none;
+        opacity: 0.75;
+    }
 }
 
 .wizard-header {

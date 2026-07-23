@@ -78,8 +78,8 @@ const PORT = process.env.PORT || 4001;
 async function start() {
     try {
         await connectMongo();
-        app.listen(PORT, () => {
-            console.log(`Backend server listening on port ${PORT}`);
+        app.listen(PORT, '127.0.0.1', () => {
+            console.log(`Backend server listening on http://127.0.0.1:${PORT}`);
         });
     } catch (error) {
         console.error('Backend startup failed', error);

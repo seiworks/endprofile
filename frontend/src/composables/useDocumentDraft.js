@@ -1,7 +1,8 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import axios from 'axios';
 import { downloadDocumentPdf } from '../services/pdf';
-import { decryptPayload, encryptPayload } from '../services/vault';
+import { decryptPayload } from '../services/vault';
 
 function cloneForm(form) {
     return JSON.parse(JSON.stringify(form));
@@ -33,6 +34,10 @@ function formatSavedAt(value) {
     return `${year}/${month}/${day} ${hours}:${minutes}`;
 }
 
+const IDLE_SAVE_MS = 30 * 60 * 1000;
+const SAVE_RETRY_MS = 60 * 1000;
+const activityEvents = ['pointerdown', 'keydown', 'touchstart', 'input', 'change', 'scroll'];
+
 export function useDocumentDraft({ type, title, form, previewText, afterLoad }) {
     const downloading = ref(false);
     const saving = ref(false);
@@ -40,52 +45,86 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
     const lastSavedAt = ref('');
     const documentId = ref('');
     const showFloatingSave = ref(false);
+    let idleSaveTimer = null;
+    let lastSavedSnapshot = '';
+    let loadComplete = false;
+    let loadPromise = null;
+    let savePromise = null;
 
     const lastSavedText = computed(() => formatSavedAt(lastSavedAt.value));
 
-    const handleScroll = () => {
+    const currentSnapshot = () => JSON.stringify({
+        structuredData: cloneForm(form),
+        draftText: previewText.value,
+    });
+
+    const isDirty = () => loadComplete && currentSnapshot() !== lastSavedSnapshot;
+
+    const clearIdleSaveTimer = () => {
+        if (idleSaveTimer) window.clearTimeout(idleSaveTimer);
+        idleSaveTimer = null;
+    };
+
+    const scheduleIdleSave = (delay = IDLE_SAVE_MS) => {
+        if (typeof window === 'undefined') return;
+        clearIdleSaveTimer();
+        idleSaveTimer = window.setTimeout(async () => {
+            idleSaveTimer = null;
+            if (!isDirty()) return;
+            const saved = await onSaveDraft();
+            if (!saved) scheduleIdleSave(SAVE_RETRY_MS);
+        }, delay);
+    };
+
+    const handleActivity = () => {
         if (typeof window === 'undefined') {
             return;
         }
         showFloatingSave.value = window.scrollY > 200;
+        scheduleIdleSave();
     };
 
     async function onSaveDraft() {
-        if (saving.value) {
-            return;
-        }
-        saving.value = true;
-        error.value = '';
-        try {
-            const encryptedPayload = await encryptPayload({
-                structuredData: cloneForm(form),
-                draftText: previewText.value,
-            });
+        if (loadPromise) await loadPromise;
+        if (!isDirty()) return true;
+        if (savePromise) return savePromise;
+
+        savePromise = (async () => {
+            saving.value = true;
+            error.value = '';
             const payload = {
                 title,
-                encryptedPayload,
+                structuredData: cloneForm(form),
+                draftText: previewText.value,
                 status: 'DRAFT',
             };
-            const response = documentId.value
-                ? await axios.patch(`/api/documents/${documentId.value}`, payload)
-                : await axios.post('/api/documents', {
-                    type,
-                    ...payload,
-                });
+            const savedSnapshot = JSON.stringify({
+                structuredData: payload.structuredData,
+                draftText: payload.draftText,
+            });
+            try {
+                const response = documentId.value
+                    ? await axios.patch(`/api/documents/${documentId.value}`, payload)
+                    : await axios.post('/api/documents', {
+                        type,
+                        ...payload,
+                    });
 
-            const doc = response && response.data;
-            if (doc && doc._id) {
-                documentId.value = doc._id;
+                const doc = response && response.data;
+                if (doc && doc._id) documentId.value = doc._id;
+                if (doc && doc.updatedAt) lastSavedAt.value = doc.updatedAt;
+                lastSavedSnapshot = savedSnapshot;
+                return true;
+            } catch (e) {
+                console.error(e);
+                error.value = '儲存失敗，已暫停切換頁面，請稍後再試。';
+                return false;
+            } finally {
+                saving.value = false;
+                savePromise = null;
             }
-            if (doc && doc.updatedAt) {
-                lastSavedAt.value = doc.updatedAt;
-            }
-        } catch (e) {
-            console.error(e);
-            error.value = '儲存失敗，請稍後再試。';
-        } finally {
-            saving.value = false;
-        }
+        })();
+        return savePromise;
     }
 
     async function loadDraft() {
@@ -111,6 +150,8 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         } catch (e) {
             console.error(e);
         } finally {
+            lastSavedSnapshot = currentSnapshot();
+            loadComplete = true;
             if (afterLoad) {
                 afterLoad();
             }
@@ -132,15 +173,22 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
 
     onMounted(() => {
         if (typeof window !== 'undefined') {
-            window.addEventListener('scroll', handleScroll, { passive: true });
-            handleScroll();
+            activityEvents.forEach((event) => window.addEventListener(event, handleActivity, { passive: true }));
+            handleActivity();
         }
-        loadDraft();
+        loadPromise = loadDraft();
+    });
+
+    onBeforeRouteLeave(async (to, from, next) => {
+        clearIdleSaveTimer();
+        const saved = await onSaveDraft();
+        next(saved ? undefined : false);
     });
 
     onUnmounted(() => {
         if (typeof window !== 'undefined') {
-            window.removeEventListener('scroll', handleScroll);
+            clearIdleSaveTimer();
+            activityEvents.forEach((event) => window.removeEventListener(event, handleActivity));
         }
     });
 

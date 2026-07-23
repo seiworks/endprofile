@@ -25,7 +25,6 @@
     },
     "devDependencies": {
         "@vitejs/plugin-vue": "^5.2.4",
-        "fake-indexeddb": "^6.2.5",
         "vite": "^6.4.3"
     }
 }

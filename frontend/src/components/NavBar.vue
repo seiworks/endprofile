@@ -43,12 +43,12 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useStore } from 'vuex';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { logout } from '../services/auth';
-import { forgetRememberedVault, lockVault } from '../services/vault';
 import { DOCUMENTS } from '../constants/documents';
 
 const store = useStore();
+const route = useRoute();
 const router = useRouter();
 const menuOpen = ref(false);
 
@@ -60,15 +60,17 @@ function closeMenu() {
 
 async function onLogout() {
     closeMenu();
+    if (route.name !== 'home') {
+        const navigationFailure = await router.push({ name: 'home' });
+        if (navigationFailure) return;
+    }
     try {
         await logout();
     } catch {
-        // Local logout must still complete when the session already expired or the network is unavailable.
+        // Local UI logout must still complete when the session already expired.
     } finally {
-        lockVault();
-        await forgetRememberedVault().catch(() => {});
         store.dispatch('user/logout');
-        router.push({ name: 'login' });
+        router.replace({ name: 'login' });
     }
 }
 </script>

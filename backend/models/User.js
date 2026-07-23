@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
         },
         vaultMetadata: {
             type: mongoose.Schema.Types.Mixed,
-            required: true,
+            default: null,
         },
         sessionVersion: {
             type: Number,

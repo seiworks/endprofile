@@ -78,15 +78,6 @@
                             {{ submitting ? '註冊中…' : '建立帳號' }}
                         </button>
                         <p v-if="error" class="login-error">{{ error }}</p>
-                        <div v-if="recoveryKey" class="login-success">
-                            <strong>請立即保存復原金鑰</strong>
-                            <p class="mt-2 mb-2 text-break">{{ recoveryKey }}</p>
-                            <p class="mb-2">金鑰只顯示這一次；遺失密碼與金鑰後，任何人都無法恢復文件。</p>
-                            <button type="button" class="btn btn-outline-light btn-sm mb-2" @click="downloadRecoveryKey">
-                                下載復原金鑰
-                            </button>
-                            <button type="button" class="login-button" @click="continueToHome">我已安全保存，繼續</button>
-                        </div>
                         <p class="login-footer-text">
                             已經有帳號了？
                             <router-link to="/login">前往登入</router-link>
@@ -103,7 +94,6 @@ import { ref } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { login, register } from '../../services/auth';
-import { createVault, lockVault } from '../../services/vault';
 
 const name = ref('');
 const email = ref('');
@@ -112,8 +102,6 @@ const passwordConfirm = ref('');
 const inviteCode = ref('');
 const submitting = ref(false);
 const error = ref('');
-const recoveryKey = ref('');
-const autoLoginSucceeded = ref(false);
 
 const store = useStore();
 const router = useRouter();
@@ -140,15 +128,12 @@ async function onSubmit() {
     error.value = '';
 
     try {
-        const vault = await createVault(password.value);
         await register({
             name: name.value,
             email: email.value,
             password: password.value,
-            vaultMetadata: vault.metadata,
             inviteCode: inviteCode.value,
         });
-        recoveryKey.value = vault.recoveryKey;
         inviteCode.value = '';
 
         const auth = await login({
@@ -159,17 +144,10 @@ async function onSubmit() {
         store.dispatch('user/saveAuth', {
             user: auth.user,
         });
-        autoLoginSucceeded.value = true;
         password.value = '';
         passwordConfirm.value = '';
+        router.push({ name: 'home' });
     } catch (e) {
-        if (recoveryKey.value) {
-            password.value = '';
-            passwordConfirm.value = '';
-            error.value = '帳號已建立，但自動登入失敗。請先下載復原金鑰，再回到登入頁。';
-            return;
-        }
-        lockVault();
         if (e.code === 'ECONNABORTED') {
             error.value = '註冊逾時，請確認後端與 MongoDB 是否已啟動。';
             return;
@@ -185,21 +163,5 @@ async function onSubmit() {
     } finally {
         submitting.value = false;
     }
-}
-
-function continueToHome() {
-    recoveryKey.value = '';
-    if (!autoLoginSucceeded.value) lockVault();
-    router.push({ name: autoLoginSucceeded.value ? 'home' : 'login' });
-}
-
-function downloadRecoveryKey() {
-    const blob = new Blob([recoveryKey.value], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'endprofile-recovery-key.txt';
-    link.click();
-    URL.revokeObjectURL(url);
 }
 </script>

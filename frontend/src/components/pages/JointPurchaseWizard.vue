@@ -245,45 +245,60 @@
                             <div class="mb-3 ps-3 border-start border-light border-opacity-25">
                                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                                     <h6 class="mb-0">每月貸款負擔</h6>
-                                    <router-link class="btn btn-outline-light btn-sm" to="/tools/monthly-loan">
+                                    <router-link class="btn btn-outline-light btn-sm loan-calculator-link"
+                                        to="/tools/monthly-loan">
                                         前往負擔試算
                                     </router-link>
                                 </div>
                                 <p class="small text-muted">方案與利率由負擔試算頁套用；每月負擔金額仍可手動調整。</p>
                                 <div class="loan-plan-summary mb-3">
-                                    <span class="loan-plan-badge">
-                                        {{ form.loanPlan === 'regular' ? '一般首購' : '新青安 3.0' }}
-                                    </span>
-                                    <span class="loan-summary-divider" />
-                                    <span class="loan-rate-item">尾差 1 元歸<strong>{{ form.loanRemainderRecipient === 'B' ? '乙方' : '甲方' }}</strong></span>
-                                    <template v-if="form.loanPlan === 'regular'">
-                                        <span class="loan-summary-divider" />
-                                        <span class="loan-rate-item">
-                                            適用年利率
-                                            <strong>{{ formatRate(form.regularLoanRate) }}%</strong>
-                                        </span>
-                                    </template>
-                                    <template v-else>
-                                        <span class="loan-summary-divider" />
-                                        <span class="loan-rate-item">
-                                            前 3 年
-                                            <strong>{{ formatRate(form.youthPreferentialRate) }}%</strong>
-                                        </span>
-                                        <i class="mdi mdi-arrow-right loan-rate-arrow" />
-                                        <span class="loan-rate-item">
-                                            完全退場
-                                            <strong>{{ formatRate(form.youthOriginalRate) }}%</strong>
-                                        </span>
-                                        <span class="loan-summary-divider" />
-                                        <span class="loan-rate-item">
-                                            一般貸款
-                                            <strong>{{ formatRate(form.generalLoanRate) }}%</strong>
-                                        </span>
-                                    </template>
+                                    <div class="loan-plan-summary-core">
+                                        <div class="loan-plan-header">
+                                            <span class="loan-plan-badge">
+                                                {{ form.loanPlan === 'regular' ? '一般首購' : '新青安 3.0' }}
+                                            </span>
+                                            <span class="loan-remainder">
+                                                尾差 1 元歸
+                                                <strong>{{ form.loanRemainderRecipient === 'B' ? '乙方' : '甲方' }}</strong>
+                                            </span>
+                                        </div>
+                                        <div class="loan-rate-grid" :class="{ 'loan-rate-grid-regular': form.loanPlan === 'regular' }">
+                                            <div v-if="form.loanPlan === 'regular'" class="loan-rate-item">
+                                                貸款年限
+                                                <strong>{{ form.regularLoanYears }} 年</strong>
+                                            </div>
+                                            <div v-if="form.loanPlan === 'regular'" class="loan-rate-item">
+                                                適用年利率
+                                                <strong>{{ formatRate(form.regularLoanRate) }}%</strong>
+                                            </div>
+                                            <template v-else>
+                                                <div class="loan-rate-item">
+                                                    青安年限
+                                                    <strong>{{ form.youthLoanYears }} 年</strong>
+                                                </div>
+                                                <div class="loan-rate-item">
+                                                    前 3 年利率
+                                                    <strong>{{ formatRate(form.youthPreferentialRate) }}%</strong>
+                                                </div>
+                                                <div class="loan-rate-item">
+                                                    完全退場利率
+                                                    <strong>{{ formatRate(form.youthOriginalRate) }}%</strong>
+                                                </div>
+                                                <div class="loan-rate-item">
+                                                    一般貸款年限
+                                                    <strong>{{ form.generalLoanYears }} 年</strong>
+                                                </div>
+                                                <div class="loan-rate-item">
+                                                    一般貸款利率
+                                                    <strong>{{ formatRate(form.generalLoanRate) }}%</strong>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="row g-2 mb-3">
+                                <div v-if="form.loanPlan === 'regular'" class="row g-2 mb-3">
                                     <div class="col-12">
-                                        <strong class="small">{{ form.loanPlan === 'regular' ? '每月負擔' : '第一年每月負擔' }}</strong>
+                                        <strong class="small">每月負擔</strong>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label mb-0">甲方每月負擔</label>
@@ -298,19 +313,24 @@
                                             @input="onMoneyInput('monthlyLoanB', $event)" />
                                     </div>
                                 </div>
-                                <div v-if="form.loanPlan === 'youth'" class="row g-2">
-                                    <div class="col-12"><strong class="small">利息補貼完全退場後</strong></div>
-                                    <div class="col-md-6">
-                                        <label class="form-label mb-0">甲方每月負擔</label>
-                                        <input :value="formatMoney(form.monthlyLoanAfterExitA)" type="text"
-                                            class="form-control" inputmode="numeric" placeholder="金額"
-                                            @input="onMoneyInput('monthlyLoanAfterExitA', $event)" />
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label mb-0">乙方每月負擔</label>
-                                        <input :value="formatMoney(form.monthlyLoanAfterExitB)" type="text"
-                                            class="form-control" inputmode="numeric" placeholder="金額"
-                                            @input="onMoneyInput('monthlyLoanAfterExitB', $event)" />
+                                <div v-else class="loan-payment-periods">
+                                    <div v-for="period in youthPaymentPeriods" :key="period.label"
+                                        class="loan-payment-period">
+                                        <strong class="loan-payment-period-title">{{ period.label }}</strong>
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-0">甲方每月負擔</label>
+                                                <input :value="formatMoney(form[period.aKey])" type="text"
+                                                    class="form-control" inputmode="numeric" placeholder="金額"
+                                                    @input="onMoneyInput(period.aKey, $event)" />
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label mb-0">乙方每月負擔</label>
+                                                <input :value="formatMoney(form[period.bKey])" type="text"
+                                                    class="form-control" inputmode="numeric" placeholder="金額"
+                                                    @input="onMoneyInput(period.bKey, $event)" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -427,9 +447,21 @@ const form = reactive({
     rentB: null,
     monthlyLoanA: null,
     monthlyLoanB: null,
+    monthlyLoanYear4A: null,
+    monthlyLoanYear4B: null,
+    monthlyLoanYear5A: null,
+    monthlyLoanYear5B: null,
+    monthlyLoanYear6A: null,
+    monthlyLoanYear6B: null,
     monthlyLoanAfterExitA: null,
     monthlyLoanAfterExitB: null,
     loanPlan: 'regular',
+    regularLoanAmount: null,
+    regularLoanYears: 30,
+    youthLoanYears: 40,
+    generalLoanYears: 30,
+    loanGraceYears: 0,
+    generalLoanGraceYears: 0,
     regularLoanRate: 2.2,
     youthPreferentialRate: 1.775,
     youthOriginalRate: 2.275,
@@ -443,6 +475,14 @@ const form = reactive({
     deathArrangement: '',
     breach: '',
 });
+
+const youthPaymentPeriods = [
+    { label: '第 1–3 年', aKey: 'monthlyLoanA', bKey: 'monthlyLoanB' },
+    { label: '第 4 年', aKey: 'monthlyLoanYear4A', bKey: 'monthlyLoanYear4B' },
+    { label: '第 5 年', aKey: 'monthlyLoanYear5A', bKey: 'monthlyLoanYear5B' },
+    { label: '第 6 年', aKey: 'monthlyLoanYear6A', bKey: 'monthlyLoanYear6B' },
+    { label: '完全退場後（第 7 年起）', aKey: 'monthlyLoanAfterExitA', bKey: 'monthlyLoanAfterExitB' },
+];
 
 const asNumber = (value) => {
     const num = Number(value);
@@ -487,6 +527,13 @@ const applyLoanCalculatorResult = () => {
                 form[key] = Number(value);
             }
         };
+        assignNumberIfPresent('totalPrice', result.totalPrice);
+        assignNumberIfPresent('regularLoanAmount', result.regularLoanAmount);
+        assignNumberIfPresent('loanGraceYears', result.graceYears);
+        assignNumberIfPresent('generalLoanGraceYears', result.generalGraceYears);
+        assignNumberIfPresent('regularLoanYears', result.regularLoanYears);
+        assignNumberIfPresent('youthLoanYears', result.youthLoanYears);
+        assignNumberIfPresent('generalLoanYears', result.generalLoanYears);
         form.loanPlan = result.loanPlan === 'youth' ? 'youth' : 'regular';
         form.loanRemainderRecipient = result.remainderRecipient === 'B' ? 'B' : 'A';
         assignNumberIfPresent('regularLoanRate', result.regularLoanRate);
@@ -495,6 +542,12 @@ const applyLoanCalculatorResult = () => {
         assignNumberIfPresent('generalLoanRate', result.generalLoanRate);
         form.monthlyLoanA = asNumber(result.firstYearA);
         form.monthlyLoanB = asNumber(result.firstYearB);
+        form.monthlyLoanYear4A = asNumber(result.year4A);
+        form.monthlyLoanYear4B = asNumber(result.year4B);
+        form.monthlyLoanYear5A = asNumber(result.year5A);
+        form.monthlyLoanYear5B = asNumber(result.year5B);
+        form.monthlyLoanYear6A = asNumber(result.year6A);
+        form.monthlyLoanYear6B = asNumber(result.year6B);
         form.monthlyLoanAfterExitA = asNumber(result.afterExitA);
         form.monthlyLoanAfterExitB = asNumber(result.afterExitB);
     } catch (e) {
@@ -663,12 +716,27 @@ const previewText = computed(() => {
         '如需辦理銀行貸款，貸款總額由雙方共同決定，每月本息依出資比例或另行約定之比例分擔；如一方代為繳納，他方應返還其代墊款項，必要時得約定合理利息。';
     const firstYearLoanTotal = asNumber(form.monthlyLoanA) + asNumber(form.monthlyLoanB);
     const afterExitLoanTotal = asNumber(form.monthlyLoanAfterExitA) + asNumber(form.monthlyLoanAfterExitB);
+    const youthPaymentText = youthPaymentPeriods
+        .map((period) => {
+            const partyA = asNumber(form[period.aKey]);
+            const partyB = asNumber(form[period.bKey]);
+            if (partyA + partyB <= 0) return '';
+            return `${period.label}：甲方新台幣 ${partyA.toLocaleString('zh-TW')} 元、乙方新台幣 ${partyB.toLocaleString('zh-TW')} 元`;
+        })
+        .filter(Boolean)
+        .join('；');
     let loanBurdenText = '';
     if (form.loanPlan === 'regular' && firstYearLoanTotal > 0) {
-        loanBurdenText = `\n貸款方案：一般首購，適用年利率 ${formatRate(form.regularLoanRate)}%。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
+        const priceText = asNumber(form.totalPrice) > 0
+            ? `房屋總價新台幣 ${asNumber(form.totalPrice).toLocaleString('zh-TW')} 元，`
+            : '';
+        const loanAmountText = asNumber(form.regularLoanAmount) > 0
+            ? `貸款金額新台幣 ${asNumber(form.regularLoanAmount).toLocaleString('zh-TW')} 元，`
+            : '';
+        loanBurdenText = `\n貸款方案：一般首購，${priceText}${loanAmountText}貸款年限 ${asNumber(form.regularLoanYears)} 年，適用年利率 ${formatRate(form.regularLoanRate)}%，寬限期 ${asNumber(form.loanGraceYears)} 年。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
     }
     if (form.loanPlan === 'youth' && (firstYearLoanTotal > 0 || afterExitLoanTotal > 0)) {
-        loanBurdenText = `\n貸款方案：新青安 3.0，前 3 年優惠年利率 ${formatRate(form.youthPreferentialRate)}%，補貼完全退場後年利率 ${formatRate(form.youthOriginalRate)}%，搭配之一般貸款年利率 ${formatRate(form.generalLoanRate)}%。第一年每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；利息補貼完全退場後，甲方約新台幣 ${asNumber(form.monthlyLoanAfterExitA).toLocaleString('zh-TW')} 元、乙方約新台幣 ${asNumber(form.monthlyLoanAfterExitB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
+        loanBurdenText = `\n貸款方案：新青安 3.0，青安貸款年限 ${asNumber(form.youthLoanYears)} 年、寬限期 ${asNumber(form.loanGraceYears)} 年，前 3 年優惠年利率 ${formatRate(form.youthPreferentialRate)}%，補貼完全退場後年利率 ${formatRate(form.youthOriginalRate)}%；搭配之一般貸款年限 ${asNumber(form.generalLoanYears)} 年、年利率 ${formatRate(form.generalLoanRate)}%，寬限期 ${asNumber(form.generalLoanGraceYears)} 年。每月貸款負擔概算如下：${youthPaymentText}；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
     }
 
     const expensesText =
@@ -747,50 +815,151 @@ const {
 
 <style scoped>
 .loan-plan-summary {
+    padding: 0.3rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 0.65rem 1.5rem rgba(17, 27, 48, 0.12);
+}
+
+.loan-calculator-link {
+    position: relative;
+}
+
+.loan-calculator-link::after {
+    content: '';
+    position: absolute;
+    inset: -0.3rem;
+    border: 2px solid rgba(255, 255, 255, 0.88);
+    border-radius: inherit;
+    box-shadow: 0 0 0.8rem rgba(255, 255, 255, 0.55);
+    pointer-events: none;
+    animation: loan-calculator-link-breathe 2s ease-in-out infinite;
+}
+
+@keyframes loan-calculator-link-breathe {
+    0%,
+    100% {
+        opacity: 0.38;
+        transform: scale(0.97);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loan-calculator-link::after {
+        animation: none;
+        opacity: 0.72;
+    }
+}
+
+.loan-plan-summary-core {
+    overflow: hidden;
+    border-radius: 0.75rem;
+    background: linear-gradient(145deg, rgba(35, 51, 78, 0.72), rgba(31, 43, 67, 0.58));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.loan-plan-header {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
-    min-height: 3.25rem;
-    padding: 0.65rem 0.8rem;
-    overflow-x: auto;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 0.85rem;
-    background: rgba(22, 27, 48, 0.18);
-    white-space: nowrap;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0.9rem;
 }
 
 .loan-plan-badge {
-    flex: 0 0 auto;
-    padding: 0.42rem 0.75rem;
-    border-radius: 999px;
-    background: #fff;
-    color: #30384a;
-    font-size: 0.78rem;
+    color: #ffe2a8;
+    font-size: 0.85rem;
     font-weight: 800;
+    letter-spacing: 0.02em;
 }
 
-.loan-summary-divider {
-    align-self: stretch;
-    width: 1px;
-    background: rgba(255, 255, 255, 0.18);
-}
-
-.loan-rate-item {
+.loan-remainder {
     display: inline-flex;
     align-items: baseline;
     gap: 0.35rem;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 0.76rem;
+}
+
+.loan-remainder strong {
+    color: #ffffff;
+    font-size: 0.9rem;
+}
+
+.loan-rate-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.loan-rate-grid-regular {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.loan-rate-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    min-width: 0;
+    padding: 0.75rem 0.9rem 0.85rem;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+}
+
+.loan-rate-item + .loan-rate-item {
+    border-left: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .loan-rate-item strong {
     color: #fff;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
     font-variant-numeric: tabular-nums;
 }
 
-.loan-rate-arrow {
-    color: rgba(255, 255, 255, 0.45);
+@media (max-width: 575.98px) {
+    .loan-rate-grid,
+    .loan-rate-grid-regular {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .loan-plan-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .loan-rate-item {
+        padding-inline: 0.6rem;
+    }
+}
+
+.loan-payment-periods {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.loan-payment-period {
+    padding: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.75rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.loan-payment-period-title {
+    display: block;
+    margin-bottom: 0.55rem;
+    color: #ffd88a;
     font-size: 0.9rem;
 }
 </style>
