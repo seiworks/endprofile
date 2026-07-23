@@ -22,7 +22,7 @@ const app = express();
 
 app.set('trust proxy', 1);
 app.use(helmet());
-const allowedOrigins = String(process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
+const allowedOrigins = String(process.env.FRONTEND_ORIGIN || 'http://localhost:5174')
     .split(',').map((value) => value.trim()).filter(Boolean);
 const isDevelopmentOrigin = (origin) => process.env.NODE_ENV !== 'production'
     && /^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
@@ -73,7 +73,7 @@ app.use((error, req, res, next) => {
     return res.status(500).json({ message: '伺服器發生錯誤' });
 });
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 4001;
 
 async function start() {
     try {

@@ -103,8 +103,10 @@ npm run dev
 Vite proxies frontend `/api` requests to:
 
 ```text
-http://localhost:4000
+http://localhost:4001
 ```
+
+The local frontend runs at `http://localhost:5174` by default.
 
 ## Environment Variables
 
@@ -113,7 +115,7 @@ Create `backend/.env` as needed.
 ```text
 MONGODB_URI=mongodb://localhost:27017/endprofile
 JWT_SECRET=<YOUR_LONG_RANDOM_SECRET>
-PORT=4000
+PORT=4001
 FRONTEND_ORIGIN=https://your-frontend.example.com
 REGISTRATION_INVITE_CODE=<YOUR_PRIVATE_INVITE_CODE>
 ```
@@ -175,7 +177,7 @@ Build and run the application as one same-origin service with the root `Dockerfi
 
 ```bash
 docker build -t endprofile .
-docker run --env-file backend/.env -p 4000:4000 endprofile
+docker run --env-file backend/.env -p 4001:4001 endprofile
 ```
 
 Required production environment variables:
@@ -185,7 +187,7 @@ Required production environment variables:
 - `JWT_SECRET`: at least 32 random bytes; never reuse the invite code
 - `REGISTRATION_INVITE_CODE`: share privately only with invited friends
 - `FRONTEND_ORIGIN`: exact public HTTPS origin, without a trailing slash
-- `PORT`: defaults to `4000`
+- `PORT`: the provided Docker and Render production configuration uses `4001`
 
 Generate independent secrets, for example:
 
