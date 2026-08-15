@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const getJwtSecret = require('../utils/jwtSecret');
 const sendError = require('../utils/httpError');
-const crypto = require('crypto');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -23,24 +22,11 @@ function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function safeEqual(left, right) {
-    const leftBuffer = Buffer.from(String(left || ''));
-    const rightBuffer = Buffer.from(String(right || ''));
-    return leftBuffer.length === rightBuffer.length && crypto.timingSafeEqual(leftBuffer, rightBuffer);
-}
-
 router.post('/register', async (req, res) => {
-    const { email, password, name, inviteCode } = req.body;
+    const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
-    const normalizedName = typeof name === 'string' ? name.trim() : '';
-    if (!process.env.REGISTRATION_INVITE_CODE) {
-        return sendError(res, 503, '目前未開放註冊');
-    }
-    if (!safeEqual(inviteCode, process.env.REGISTRATION_INVITE_CODE)) {
-        return sendError(res, 403, '邀請碼不正確');
-    }
 
-    if (!normalizedEmail || typeof password !== 'string' || !normalizedName) {
+    if (!normalizedEmail || typeof password !== 'string') {
         return sendError(res, 400, '缺少必要欄位');
     }
 
@@ -63,10 +49,9 @@ router.post('/register', async (req, res) => {
         const user = await User.create({
             email: normalizedEmail,
             passwordHash,
-            name: normalizedName,
         });
 
-        return res.status(201).json({ id: user.id, email: user.email, name: user.name });
+        return res.status(201).json({ id: user.id, email: user.email });
     } catch (err) {
         console.error(err);
         return sendError(res, 500, '註冊失敗');
@@ -101,7 +86,7 @@ router.post('/login', async (req, res) => {
         res.setHeader('Set-Cookie', sessionCookie(token));
 
         return res.json({
-            user: { id: user.id, email: user.email, name: user.name },
+            user: { id: user.id, email: user.email },
             vaultMetadata: user.vaultMetadata,
         });
     } catch (err) {

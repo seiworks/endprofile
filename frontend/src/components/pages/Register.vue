@@ -16,29 +16,6 @@
                     <form @submit.prevent="onSubmit">
                         <div class="login-field">
                             <label class="login-label">
-                                <span class="login-label-icon"><i class="mdi mdi-ticket-confirmation-outline" /></span>
-                                <span>朋友邀請碼</span>
-                            </label>
-                            <div class="login-input-wrapper">
-                                <span class="login-input-icon"><i class="mdi mdi-ticket-confirmation-outline" /></span>
-                                <input v-model="inviteCode" type="password" class="login-input" autocomplete="off"
-                                    placeholder="請輸入邀請碼" />
-                            </div>
-                        </div>
-                        <div class="login-field">
-                            <label class="login-label">
-                                <span class="login-label-icon"><i class="mdi mdi-account-outline" /></span>
-                                <span>名稱</span>
-                            </label>
-                            <div class="login-input-wrapper">
-                                <span class="login-input-icon">
-                                    <i class="mdi mdi-account-outline" />
-                                </span>
-                                <input v-model="name" type="text" class="login-input" placeholder="請輸入名稱" />
-                            </div>
-                        </div>
-                        <div class="login-field">
-                            <label class="login-label">
                                 <span class="login-label-icon"><i class="mdi mdi-email-outline" /></span>
                                 <span>Email</span>
                             </label>
@@ -95,11 +72,9 @@ import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import { login, register } from '../../services/auth';
 
-const name = ref('');
 const email = ref('');
 const password = ref('');
 const passwordConfirm = ref('');
-const inviteCode = ref('');
 const submitting = ref(false);
 const error = ref('');
 
@@ -111,7 +86,7 @@ async function onSubmit() {
         return;
     }
 
-    if (!name.value || !email.value || !password.value || !passwordConfirm.value || !inviteCode.value) {
+    if (!email.value || !password.value || !passwordConfirm.value) {
         error.value = '請填寫所有欄位';
         return;
     }
@@ -129,12 +104,9 @@ async function onSubmit() {
 
     try {
         await register({
-            name: name.value,
             email: email.value,
             password: password.value,
-            inviteCode: inviteCode.value,
         });
-        inviteCode.value = '';
 
         const auth = await login({
             email: email.value,

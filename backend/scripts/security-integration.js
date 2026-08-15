@@ -3,7 +3,6 @@ const path = require('node:path');
 const express = require('express');
 
 process.env.JWT_SECRET = 'integration-test-secret-that-is-not-for-production';
-process.env.REGISTRATION_INVITE_CODE = 'friends-only';
 process.env.NODE_ENV = 'production';
 
 const users = [];
@@ -94,12 +93,12 @@ async function run() {
     const api = (route, options = {}) => fetch(`${root}${route}`, options);
     try {
         let response = await post('/register', {
-            email: 'blocked@example.com', name: 'Blocked', password: 'correct horse battery staple', inviteCode: 'incorrect',
+            email: '', password: 'correct horse battery staple',
         });
-        assert.equal(response.status, 403);
+        assert.equal(response.status, 400);
 
         response = await post('/register', {
-            email: 'friend@example.com', name: 'Friend', password: 'correct horse battery staple', inviteCode: 'friends-only',
+            email: 'friend@example.com', password: 'correct horse battery staple',
         });
         assert.equal(response.status, 201);
         assert.equal(users[0].vaultMetadata, undefined);
@@ -189,7 +188,7 @@ async function run() {
         assert.equal(updated.draftText, '更新後全文');
 
         response = await post('/register', {
-            email: 'other@example.com', name: 'Other', password: 'another correct horse password', inviteCode: 'friends-only',
+            email: 'other@example.com', password: 'another correct horse password',
         });
         assert.equal(response.status, 201);
         response = await post('/login', { email: 'other@example.com', password: 'another correct horse password' });

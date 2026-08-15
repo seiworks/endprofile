@@ -30,7 +30,7 @@
 
 - MongoDB 只監聽 localhost，不公開 `27017`。
 - Express 與 Vite 只供本機存取，不設定 port forwarding 或公開反向代理。
-- `JWT_SECRET` 與 `REGISTRATION_INVITE_CODE` 只放在 `backend/.env`。
+- `JWT_SECRET` 只放在 `backend/.env`。
 - 定期建立並實際測試 MongoDB 備份還原；將備份視為明文敏感資料。
 - 安裝依賴更新前先執行測試並檢查安全公告。
 

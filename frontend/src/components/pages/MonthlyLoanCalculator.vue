@@ -39,7 +39,7 @@
                             </div>
 
                             <div class="row g-3 mb-4">
-                                <div class="col-md-5">
+                                <div class="col-md-3">
                                     <label class="form-label">房屋總價</label>
                                     <div class="input-group">
                                         <input :value="formatTenThousand(form.totalPrice)" type="text"
@@ -51,12 +51,21 @@
                                 <div class="col-md-3">
                                     <label class="form-label">貸款成數</label>
                                     <div class="input-group">
-                                        <input v-model.number="form.ltv" type="number" min="0" max="100"
-                                            class="form-control" @input="resetLoanAmountOverrides" />
+                                        <input :value="formatLoanRatio(form.ltv)" type="number" min="0" max="100"
+                                            step="1" class="form-control" @input="onLtvInput" />
                                         <span class="input-group-text">%</span>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
+                                    <label class="form-label">自備款</label>
+                                    <div class="input-group">
+                                        <input :value="formatTenThousand(form.downPayment)" type="text"
+                                            class="form-control" inputmode="decimal" placeholder="例如：344"
+                                            @input="onTenThousandInput('downPayment', $event)" />
+                                        <span class="input-group-text">萬元</span>
+                                    </div>
+                                </div>
+                                <div v-if="form.loanType === 'youth'" class="col-md-3">
                                     <label class="form-label">
                                         {{ form.loanType === 'youth' ? '新青安寬限期' : '寬限期' }}
                                     </label>
@@ -71,7 +80,7 @@
                             <div v-if="form.loanType === 'regular'" class="loan-section">
                                 <h5 class="mb-3">一般貸款條件</h5>
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label class="form-label">貸款總額</label>
                                         <div class="input-group">
                                             <input :value="formatTenThousand(regularLoanAmount)" type="text"
@@ -95,6 +104,14 @@
                                                 class="form-control" />
                                             <span class="input-group-text">年</span>
                                         </div>
+                                    </div>
+                                    <div class="col-6 col-md-3">
+                                        <label class="form-label">寬限期</label>
+                                        <select v-model.number="form.graceYears" class="form-select">
+                                            <option v-for="year in 6" :key="year - 1" :value="year - 1">
+                                                {{ year === 1 ? '無寬限期' : `${year - 1} 年` }}
+                                            </option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -237,6 +254,10 @@
                             <p class="result-amount" :class="form.loanType === 'youth' ? 'mb-3' : 'mb-4'">
                                 {{ formatCurrency(firstYearMonthly) }}
                             </p>
+                            <div class="result-row result-interest-row mb-3">
+                                <span>可能支付的總利息</span>
+                                <strong>{{ formatCurrency(possibleTotalInterest) }}</strong>
+                            </div>
                             <div v-if="form.loanType === 'youth'" class="result-exit-summary mb-4">
                                 <p class="small text-light opacity-75 mb-1">退場後每月合計負擔</p>
                                 <p class="result-exit-amount mb-0">{{ formatCurrency(afterExitMonthly) }}</p>
@@ -282,7 +303,33 @@
                                     </div>
                                 </div>
                             </template>
-                            <div class="result-note mt-auto">
+                            <div class="result-note mt-4">
+                                <strong class="d-block text-light mb-2">新青安 3.0／一般首購比較</strong>
+                                <div class="d-flex justify-content-between gap-3 mb-1">
+                                    <span>一般首購</span>
+                                    <span>{{ formatCurrency(regularComparisonMonthly) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 mb-1">
+                                    <span>新青安第一年</span>
+                                    <span>{{ formatCurrency(youthFirstYearMonthly) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 mb-1">
+                                    <span>新青安完全退場後</span>
+                                    <span>{{ formatCurrency(youthAfterExitMonthly) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3 mb-1">
+                                    <span>新青安每月{{ regularComparisonDifference >= 0 ? '少付' : '多付' }}（第一年）</span>
+                                    <span>{{ formatCurrency(Math.abs(regularComparisonDifference)) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between gap-3">
+                                    <span>新青安每月{{ regularAfterExitDifference >= 0 ? '少付' : '多付' }}（退場後）</span>
+                                    <span>{{ formatCurrency(Math.abs(regularAfterExitDifference)) }}</span>
+                                </div>
+                                <small class="d-block text-light opacity-75 mt-2">
+                                    以相同貸款總額、一般首購利率、年限及寬限期試算。
+                                </small>
+                            </div>
+                            <div class="result-note mt-4">
                                 寬限期內僅計利息，期滿後於剩餘年限採本息平均攤還<span
                                     v-if="form.loanType === 'youth'">並按年重算剩餘本金</span>；未計入開辦費、保險或銀行個別計息規則，結果僅供規劃參考。
                             </div>
@@ -300,7 +347,8 @@ import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { setLoanCalculatorResult } from '../../services/loanTransfer';
 import {
-    calculateMonthlyPaymentWithGrace, calculateYouthStages, formatRate, splitPayment,
+    calculateLoanAmount, calculateLoanBreakdownFromLtv, calculateMonthlyPaymentWithGrace, calculateYouthStages,
+    calculateTotalInterestWithGrace, calculateYouthTotalInterest, formatRate, splitPayment,
 } from '../../services/loanCalculator';
 
 const router = useRouter();
@@ -309,11 +357,11 @@ const store = useStore();
 const form = reactive({
     loanType: 'regular',
     totalPrice: 0,
+    downPayment: 0,
     ltv: 80,
     graceYears: 0,
     regularRate: 3.0,
     regularYears: 30,
-    regularAmount: null,
     youthAmount: 10000000,
     youthPreferentialRate: 1.775,
     youthOriginalRate: 2.275,
@@ -321,18 +369,20 @@ const form = reactive({
     generalRate: 3,
     generalYears: 30,
     generalGraceYears: 0,
-    generalAmount: null,
     shareA: 50,
     remainderRecipient: 'A',
 });
 
 const userProfile = store.state.user.profile;
 const calculatorStorageOwner = userProfile?.id || userProfile?._id || userProfile?.email;
+const calculatorSettingsStorageKey = calculatorStorageOwner
+    ? `endprofile.loanCalculator.settings.v2.${encodeURIComponent(calculatorStorageOwner)}`
+    : null;
 const calculatorStorageKey = calculatorStorageOwner
     ? `endprofile.loanCalculator.totalPrice.v1.${encodeURIComponent(calculatorStorageOwner)}`
     : null;
-const calculatorLtvStorageKey = calculatorStorageOwner
-    ? `endprofile.loanCalculator.ltv.v1.${encodeURIComponent(calculatorStorageOwner)}`
+const calculatorDownPaymentStorageKey = calculatorStorageOwner
+    ? `endprofile.loanCalculator.downPayment.v1.${encodeURIComponent(calculatorStorageOwner)}`
     : null;
 const generalLoanStorageKey = calculatorStorageOwner
     ? `endprofile.loanCalculator.generalTerms.v1.${encodeURIComponent(calculatorStorageOwner)}`
@@ -342,8 +392,19 @@ const legacyCalculatorStorageKey = calculatorStorageOwner
     : null;
 
 const restoreSavedLoanInputs = () => {
-    if (!calculatorStorageKey) return;
+    if (!calculatorSettingsStorageKey) return;
     try {
+        const savedSettings = JSON.parse(localStorage.getItem(calculatorSettingsStorageKey) || 'null');
+        if (savedSettings && typeof savedSettings === 'object' && !Array.isArray(savedSettings)) {
+            Object.keys(form).forEach((key) => {
+                if (Object.prototype.hasOwnProperty.call(savedSettings, key)) {
+                    form[key] = savedSettings[key];
+                }
+            });
+            form.ltv = Math.round(Math.min(Math.max(Number(form.ltv) || 0, 0), 100));
+            return;
+        }
+
         const savedValue = localStorage.getItem(calculatorStorageKey);
         const legacySettings = legacyCalculatorStorageKey
             ? JSON.parse(localStorage.getItem(legacyCalculatorStorageKey) || 'null')
@@ -351,18 +412,17 @@ const restoreSavedLoanInputs = () => {
         const totalPrice = Number(savedValue ?? legacySettings?.totalPrice);
         if (Number.isFinite(totalPrice) && totalPrice >= 0) form.totalPrice = totalPrice;
 
-        const savedLtv = Number(localStorage.getItem(calculatorLtvStorageKey) ?? legacySettings?.ltv);
-        if (Number.isFinite(savedLtv) && savedLtv >= 0 && savedLtv <= 100) form.ltv = savedLtv;
+        const savedDownPayment = Number(localStorage.getItem(calculatorDownPaymentStorageKey));
+        if (Number.isFinite(savedDownPayment) && savedDownPayment >= 0) form.downPayment = savedDownPayment;
+
+        const legacyLtv = Number(legacySettings?.ltv);
+        if (Number.isFinite(legacyLtv) && legacyLtv >= 0 && legacyLtv <= 100) form.ltv = Math.round(legacyLtv);
 
         const savedGeneralTerms = JSON.parse(localStorage.getItem(generalLoanStorageKey) || 'null');
         const generalRate = Number(savedGeneralTerms?.generalRate);
         const generalYears = Number(savedGeneralTerms?.generalYears);
         if (Number.isFinite(generalRate) && generalRate >= 0) form.generalRate = generalRate;
         if (Number.isFinite(generalYears) && generalYears >= 1) form.generalYears = generalYears;
-        if (Object.prototype.hasOwnProperty.call(savedGeneralTerms || {}, 'regularAmount')) {
-            const regularAmount = Number(savedGeneralTerms.regularAmount);
-            if (Number.isFinite(regularAmount) && regularAmount >= 0) form.regularAmount = regularAmount;
-        }
     } catch (error) {
         console.error('Failed to restore saved loan calculator inputs', error);
     }
@@ -370,78 +430,28 @@ const restoreSavedLoanInputs = () => {
 
 restoreSavedLoanInputs();
 
-watch(() => form.totalPrice, (value) => {
-    if (!calculatorStorageKey) return;
+watch(form, () => {
+    if (!calculatorSettingsStorageKey) return;
     try {
-        const totalPrice = Number(value);
-        if (Number.isFinite(totalPrice) && totalPrice >= 0) {
-            localStorage.setItem(calculatorStorageKey, String(totalPrice));
-        }
+        localStorage.setItem(calculatorSettingsStorageKey, JSON.stringify(form));
     } catch (error) {
-        console.error('Failed to save loan calculator total price', error);
+        console.error('Failed to save loan calculator settings', error);
     }
-});
-
-watch(() => form.ltv, (value) => {
-    if (!calculatorLtvStorageKey) return;
-    try {
-        const ltv = Number(value);
-        if (Number.isFinite(ltv) && ltv >= 0 && ltv <= 100) {
-            localStorage.setItem(calculatorLtvStorageKey, String(ltv));
-        }
-    } catch (error) {
-        console.error('Failed to save loan calculator LTV', error);
-    }
-});
-
-watch(() => [form.generalRate, form.generalYears, form.regularAmount], ([generalRate, generalYears, regularAmount]) => {
-    if (!generalLoanStorageKey) return;
-    try {
-        const rate = Number(generalRate);
-        const years = Number(generalYears);
-        const hasRegularAmountOverride = regularAmount !== null
-            && Number.isFinite(Number(regularAmount))
-            && Number(regularAmount) >= 0;
-        if (rate === 3 && years === 30 && !hasRegularAmountOverride) {
-            localStorage.removeItem(generalLoanStorageKey);
-            return;
-        }
-        if (Number.isFinite(rate) && rate >= 0 && Number.isFinite(years) && years >= 1) {
-            const savedTerms = {
-                generalRate: rate,
-                generalYears: years,
-            };
-            if (hasRegularAmountOverride) savedTerms.regularAmount = Number(regularAmount);
-            localStorage.setItem(generalLoanStorageKey, JSON.stringify(savedTerms));
-        }
-    } catch (error) {
-        console.error('Failed to save general loan terms', error);
-    }
-});
+}, { deep: true });
 
 const asNumber = (value) => {
     const number = Number(value);
     return Number.isFinite(number) ? number : 0;
 };
 
-const clamp = (value, min, max) => Math.min(Math.max(asNumber(value), min), max);
-
-const resetLoanAmountOverrides = () => {
-    form.regularAmount = null;
-    form.generalAmount = null;
-};
-
 const estimatedLoanAmount = computed(() =>
-    Math.round(Math.max(asNumber(form.totalPrice), 0) * clamp(form.ltv, 0, 100) / 100),
+    Math.round(calculateLoanAmount(form.totalPrice, form.downPayment)),
 );
-const regularLoanAmount = computed(() => form.regularAmount === null
-    ? estimatedLoanAmount.value
-    : Math.max(asNumber(form.regularAmount), 0));
+const regularLoanAmount = computed(() => estimatedLoanAmount.value);
 const youthLoanAmount = computed(() => Math.min(Math.max(asNumber(form.youthAmount), 0), estimatedLoanAmount.value));
 const calculatedGeneralLoanAmount = computed(() => Math.max(estimatedLoanAmount.value - youthLoanAmount.value, 0));
-const generalLoanAmount = computed(() => form.generalAmount === null
-    ? calculatedGeneralLoanAmount.value
-    : Math.max(asNumber(form.generalAmount), 0));
+const generalLoanAmount = computed(() => calculatedGeneralLoanAmount.value);
+const clamp = (value, min, max) => Math.min(Math.max(asNumber(value), min), max);
 const shareA = computed(() => clamp(form.shareA, 0, 100));
 const shareB = computed(() => 100 - shareA.value);
 
@@ -453,6 +463,14 @@ const regularMonthly = computed(() =>
         form.graceYears,
     ),
 );
+const regularComparisonMonthly = computed(() => Math.round(
+    calculateMonthlyPaymentWithGrace(
+        estimatedLoanAmount.value,
+        form.regularRate,
+        form.regularYears,
+        form.graceYears,
+    ),
+));
 const regularAfterGraceMonthly = computed(() => Math.round(
     calculateMonthlyPaymentWithGrace(
         regularLoanAmount.value,
@@ -478,14 +496,42 @@ const youthStages = computed(() => calculateYouthStages({
     generalYears: form.generalYears,
     generalGraceYears: form.generalGraceYears,
 }));
+const youthFirstYearMonthly = computed(() => youthStages.value[0]?.totalMonthly || 0);
+const youthAfterExitMonthly = computed(() => youthStages.value[6]?.totalMonthly || 0);
+const regularTotalInterest = computed(() => calculateTotalInterestWithGrace(
+    regularLoanAmount.value,
+    form.regularRate,
+    form.regularYears,
+    form.graceYears,
+));
+const youthTotalInterest = computed(() => calculateYouthTotalInterest({
+    principal: youthLoanAmount.value,
+    years: form.youthYears,
+    graceYears: form.graceYears,
+    preferentialRate: form.youthPreferentialRate,
+    originalRate: form.youthOriginalRate,
+}));
+const generalTotalInterest = computed(() => calculateTotalInterestWithGrace(
+    generalLoanAmount.value,
+    form.generalRate,
+    form.generalYears,
+    form.generalGraceYears,
+));
+const possibleTotalInterest = computed(() => Math.round(
+    form.loanType === 'regular'
+        ? regularTotalInterest.value
+        : youthTotalInterest.value + generalTotalInterest.value,
+));
 
 const firstYearMonthly = computed(() => form.loanType === 'regular'
     ? Math.round(regularMonthly.value)
-    : youthStages.value[0]?.totalMonthly || 0,
+    : youthFirstYearMonthly.value,
 );
+const regularComparisonDifference = computed(() => regularComparisonMonthly.value - youthFirstYearMonthly.value);
+const regularAfterExitDifference = computed(() => regularComparisonMonthly.value - youthAfterExitMonthly.value);
 const afterExitMonthly = computed(() => form.loanType === 'regular'
     ? firstYearMonthly.value
-    : youthStages.value[6]?.totalMonthly || 0,
+    : youthAfterExitMonthly.value,
 );
 const firstYearSplit = computed(() => splitPayment(firstYearMonthly.value, shareA.value, form.remainderRecipient));
 const afterExitSplit = computed(() => splitPayment(afterExitMonthly.value, shareA.value, form.remainderRecipient));
@@ -510,27 +556,45 @@ const formatTenThousand = (value) => {
     return (asNumber(value) / 10000).toLocaleString('zh-TW', { maximumFractionDigits: 4 });
 };
 
+const formatLoanRatio = (value) => Math.round(clamp(value, 0, 100));
+
 const onTenThousandInput = (key, event) => {
     const raw = String(event.target.value || '').replace(/,/g, '').replace(/[^\d.]/g, '');
     form[key] = raw === '' ? null : asNumber(raw) * 10000;
     event.target.value = raw === '' ? '' : formatTenThousand(form[key]);
+    if (key === 'totalPrice') {
+        form.downPayment = calculateLoanBreakdownFromLtv(form.totalPrice, form.ltv).downPayment;
+    }
 };
 
-const onGeneralLoanAmountInput = (event) => {
-    const raw = String(event.target.value || '').replace(/,/g, '').replace(/[^\d.]/g, '');
-    form.generalAmount = raw === '' ? null : asNumber(raw) * 10000;
-    event.target.value = formatTenThousand(generalLoanAmount.value);
+const onLtvInput = (event) => {
+    form.ltv = Math.round(clamp(event.target.value, 0, 100));
+    form.downPayment = calculateLoanBreakdownFromLtv(form.totalPrice, form.ltv).downPayment;
+};
+
+const setDownPaymentFromLoanAmount = (loanAmount) => {
+    const totalPrice = Math.max(asNumber(form.totalPrice), 0);
+    const safeLoanAmount = Math.min(Math.max(asNumber(loanAmount), 0), totalPrice);
+    form.downPayment = Math.round(totalPrice - safeLoanAmount);
 };
 
 const onRegularLoanAmountInput = (event) => {
     const raw = String(event.target.value || '').replace(/,/g, '').replace(/[^\d.]/g, '');
-    form.regularAmount = raw === '' ? null : asNumber(raw) * 10000;
+    setDownPaymentFromLoanAmount(raw === '' ? 0 : asNumber(raw) * 10000);
     event.target.value = formatTenThousand(regularLoanAmount.value);
+};
+
+const onGeneralLoanAmountInput = (event) => {
+    const raw = String(event.target.value || '').replace(/,/g, '').replace(/[^\d.]/g, '');
+    const generalAmount = raw === '' ? 0 : asNumber(raw) * 10000;
+    setDownPaymentFromLoanAmount(asNumber(form.youthAmount) + generalAmount);
+    event.target.value = formatTenThousand(generalLoanAmount.value);
 };
 
 const applyToJointPurchase = () => {
     setLoanCalculatorResult({
         totalPrice: form.totalPrice,
+        downPayment: form.downPayment,
         regularLoanAmount: regularLoanAmount.value,
         loanPlan: form.loanType,
         graceYears: form.graceYears,

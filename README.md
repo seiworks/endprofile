@@ -1,10 +1,10 @@
 # EndProfile 正式版
 
-EndProfile 正式版是只在個人電腦本機執行的人生規劃文件工具，提供邀請制帳號、五種文件 Wizard、MongoDB 草稿保存與瀏覽器端 PDF 下載。
+EndProfile 正式版是只在個人電腦本機執行的人生規劃文件工具，提供本機帳號、五種文件 Wizard、MongoDB 草稿保存與瀏覽器端 PDF 下載。
 
 ## Features
 
-- 邀請碼註冊與帳號登入
+- 本機帳號註冊與登入，不需要邀請碼
 - 登入 Session 最長保留 7 天，沒有 30 分鐘閒置登出
 - 本機忘記密碼功能：使用已註冊 Email 設定新密碼
 - 五種文件 Wizard：預立遺囑、授權書／同居協議、共同購屋協議、生活授權、意定監護契約
@@ -12,7 +12,7 @@ EndProfile 正式版是只在個人電腦本機執行的人生規劃文件工具
 - 切換文件或離開文件編輯頁面前，自動保存有變更的內容
 - 閒置 30 分鐘後自動保存有變更的文件（不會自動登出）
 - 瀏覽器端 PDF 下載
-- 每月貸款負擔試算，支援 0–5 年寬限期、依帳號在瀏覽器本機保存房屋總價、自訂的一般貸款利率／年限及手動貸款總額，並可將結果套用至共同購屋協議
+- 每月貸款負擔試算，支援 0–5 年寬限期、依貸款成數將自備款四捨五入至整數萬元並連動貸款總額、依帳號在瀏覽器本機保存所有試算欄位與尾差歸屬，並可將結果套用至共同購屋協議
 
 文件的 `structuredData` 與 `draftText` 會以明文保存於本機 MongoDB。此設計只適合個人電腦，不可直接公開到網際網路。
 
@@ -66,11 +66,9 @@ npm run dev
 MONGODB_URI=mongodb://localhost:27017/endprofile
 JWT_SECRET=<至少 32 bytes 的隨機值>
 PORT=4001
-REGISTRATION_INVITE_CODE=<本機邀請碼>
 ```
 
-- `JWT_SECRET` 與邀請碼不可提交到 Git。
-- `REGISTRATION_INVITE_CODE` 未設定時不開放註冊。
+- `JWT_SECRET` 不可提交到 Git。
 - 本機開發不需要設定 `FRONTEND_ORIGIN`。
 
 ## Main API Routes

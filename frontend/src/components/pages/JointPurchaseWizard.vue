@@ -421,6 +421,7 @@ const form = reactive({
     landNumber: '',
     buildingDetail: '',
     totalPrice: null,
+    downPayment: null,
     downContractA: null,
     downContractB: null,
     downStage1A: null,
@@ -528,6 +529,7 @@ const applyLoanCalculatorResult = () => {
             }
         };
         assignNumberIfPresent('totalPrice', result.totalPrice);
+        assignNumberIfPresent('downPayment', result.downPayment);
         assignNumberIfPresent('regularLoanAmount', result.regularLoanAmount);
         assignNumberIfPresent('loanGraceYears', result.graceYears);
         assignNumberIfPresent('generalLoanGraceYears', result.generalGraceYears);
@@ -730,10 +732,13 @@ const previewText = computed(() => {
         const priceText = asNumber(form.totalPrice) > 0
             ? `房屋總價新台幣 ${asNumber(form.totalPrice).toLocaleString('zh-TW')} 元，`
             : '';
+        const downPaymentText = asNumber(form.downPayment) > 0
+            ? `自備款新台幣 ${asNumber(form.downPayment).toLocaleString('zh-TW')} 元，`
+            : '';
         const loanAmountText = asNumber(form.regularLoanAmount) > 0
             ? `貸款金額新台幣 ${asNumber(form.regularLoanAmount).toLocaleString('zh-TW')} 元，`
             : '';
-        loanBurdenText = `\n貸款方案：一般首購，${priceText}${loanAmountText}貸款年限 ${asNumber(form.regularLoanYears)} 年，適用年利率 ${formatRate(form.regularLoanRate)}%，寬限期 ${asNumber(form.loanGraceYears)} 年。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
+        loanBurdenText = `\n貸款方案：一般首購，${priceText}${downPaymentText}${loanAmountText}貸款年限 ${asNumber(form.regularLoanYears)} 年，適用年利率 ${formatRate(form.regularLoanRate)}%，寬限期 ${asNumber(form.loanGraceYears)} 年。每月貸款負擔概算為甲方新台幣 ${asNumber(form.monthlyLoanA).toLocaleString('zh-TW')} 元、乙方新台幣 ${asNumber(form.monthlyLoanB).toLocaleString('zh-TW')} 元；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;
     }
     if (form.loanPlan === 'youth' && (firstYearLoanTotal > 0 || afterExitLoanTotal > 0)) {
         loanBurdenText = `\n貸款方案：新青安 3.0，青安貸款年限 ${asNumber(form.youthLoanYears)} 年、寬限期 ${asNumber(form.loanGraceYears)} 年，前 3 年優惠年利率 ${formatRate(form.youthPreferentialRate)}%，補貼完全退場後年利率 ${formatRate(form.youthOriginalRate)}%；搭配之一般貸款年限 ${asNumber(form.generalLoanYears)} 年、年利率 ${formatRate(form.generalLoanRate)}%，寬限期 ${asNumber(form.generalLoanGraceYears)} 年。每月貸款負擔概算如下：${youthPaymentText}；整數元尾差歸${form.loanRemainderRecipient === 'B' ? '乙方' : '甲方'}。實際金額仍以銀行核貸及計息結果為準。`;

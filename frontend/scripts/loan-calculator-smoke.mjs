@@ -1,11 +1,31 @@
 import assert from 'node:assert/strict';
 import {
-    calculateMonthlyPayment, calculateMonthlyPaymentWithGrace, calculateYouthStages, formatRate, splitPayment,
+    calculateLoanAmount, calculateLoanBreakdownFromLtv, calculateMonthlyPayment,
+    calculateMonthlyPaymentWithGrace, calculateTotalInterestWithGrace, calculateYouthStages,
+    calculateYouthTotalInterest, formatRate, splitPayment,
 } from '../src/services/loanCalculator.js';
 
 assert.equal(formatRate(3.0), '3');
 assert.equal(formatRate(2.010), '2.01');
 assert.equal(formatRate(1.775), '1.775');
+assert.equal(calculateLoanAmount(17200000, 3440000), 13760000);
+assert.equal(calculateLoanAmount(17200000, 20000000), 0);
+assert.equal(calculateLoanAmount(null, -10000), 0);
+assert.deepEqual(calculateLoanBreakdownFromLtv(18680000, 80), {
+    downPayment: 3740000,
+    loanAmount: 14940000,
+    ltv: 80,
+});
+assert.deepEqual(calculateLoanBreakdownFromLtv(17200000, 80), {
+    downPayment: 3440000,
+    loanAmount: 13760000,
+    ltv: 80,
+});
+assert.deepEqual(calculateLoanBreakdownFromLtv(18680000, 75), {
+    downPayment: 4670000,
+    loanAmount: 14010000,
+    ltv: 75,
+});
 assert.deepEqual(splitPayment(1001, 50), { partyA: 501, partyB: 500 });
 assert.deepEqual(splitPayment(1001, 50, 'B'), { partyA: 500, partyB: 501 });
 assert.deepEqual(splitPayment(1000, 30), { partyA: 300, partyB: 700 });
@@ -15,6 +35,19 @@ assert.equal(
     Math.round(calculateMonthlyPaymentWithGrace(12000000, 3, 30, 3, 36)),
     Math.round(calculateMonthlyPayment(12000000, 3, 27)),
 );
+assert.equal(calculateTotalInterestWithGrace(12000000, 0, 30, 3), 0);
+assert.ok(calculateTotalInterestWithGrace(12000000, 3, 30, 3) > 0);
+assert.ok(
+    calculateTotalInterestWithGrace(12000000, 3, 30, 3)
+    > calculateTotalInterestWithGrace(12000000, 3, 30, 0),
+);
+assert.ok(calculateYouthTotalInterest({
+    principal: 10000000,
+    years: 40,
+    graceYears: 5,
+    preferentialRate: 1.775,
+    originalRate: 2.275,
+}) > 0);
 
 const stages = calculateYouthStages({
     youthAmount: 10000000,

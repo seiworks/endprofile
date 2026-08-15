@@ -3,6 +3,24 @@ export function asFiniteNumber(value) {
     return Number.isFinite(number) ? number : 0;
 }
 
+export function calculateLoanAmount(totalPrice, downPayment) {
+    return Math.max(asFiniteNumber(totalPrice) - Math.max(asFiniteNumber(downPayment), 0), 0);
+}
+
+export function calculateLoanBreakdownFromLtv(totalPrice, ltv) {
+    const safeTotalPrice = Math.max(asFiniteNumber(totalPrice), 0);
+    const safeLtv = Math.min(Math.max(Math.round(asFiniteNumber(ltv)), 0), 100);
+    const downPaymentInTenThousands = Math.round(
+        (safeTotalPrice / 10000) * (100 - safeLtv) / 100,
+    );
+    const downPayment = Math.min(downPaymentInTenThousands * 10000, safeTotalPrice);
+    return {
+        downPayment,
+        loanAmount: safeTotalPrice - downPayment,
+        ltv: safeLtv,
+    };
+}
+
 export function calculateMonthlyPayment(principal, annualRate, years) {
     const amount = Math.max(asFiniteNumber(principal), 0);
     const months = Math.max(asFiniteNumber(years) * 12, 0);
@@ -31,6 +49,69 @@ export function calculateMonthlyPaymentWithGrace(
     const monthlyRate = Math.max(asFiniteNumber(annualRate), 0) / 100 / 12;
     if (elapsed < graceMonths) return amount * monthlyRate;
     return calculateMonthlyPayment(amount, annualRate, (totalMonths - graceMonths) / 12);
+}
+
+export function calculateTotalInterestWithGrace(principal, annualRate, years, graceYears = 0) {
+    const amount = Math.max(asFiniteNumber(principal), 0);
+    const totalMonths = Math.max(Math.round(asFiniteNumber(years) * 12), 0);
+    if (!amount || !totalMonths) return 0;
+
+    const graceMonths = Math.min(
+        Math.max(Math.round(asFiniteNumber(graceYears) * 12), 0),
+        Math.max(totalMonths - 12, 0),
+    );
+    const monthlyRate = Math.max(asFiniteNumber(annualRate), 0) / 100 / 12;
+    const graceInterest = amount * monthlyRate * graceMonths;
+    const repaymentMonths = totalMonths - graceMonths;
+    const monthlyPayment = calculateMonthlyPayment(amount, annualRate, repaymentMonths / 12);
+    return Math.max(graceInterest + monthlyPayment * repaymentMonths - amount, 0);
+}
+
+export function calculateYouthTotalInterest({
+    principal,
+    years,
+    graceYears = 0,
+    preferentialRate,
+    originalRate,
+}) {
+    const amount = Math.max(asFiniteNumber(principal), 0);
+    const totalMonths = Math.max(Math.round(asFiniteNumber(years) * 12), 0);
+    if (!amount || !totalMonths) return 0;
+
+    const graceMonths = Math.min(
+        Math.max(Math.round(asFiniteNumber(graceYears) * 12), 0),
+        Math.max(totalMonths - 12, 0),
+    );
+    const baseRate = Math.max(asFiniteNumber(preferentialRate), 0);
+    const finalRate = Math.max(asFiniteNumber(originalRate), 0);
+    const rateForMonth = (month) => {
+        const year = Math.floor(month / 12) + 1;
+        if (year <= 3) return baseRate;
+        if (year === 4) return baseRate + 0.125;
+        if (year === 5) return baseRate + 0.25;
+        if (year === 6) return baseRate + 0.375;
+        return finalRate;
+    };
+
+    let balance = amount;
+    let totalInterest = 0;
+    let monthlyPayment = 0;
+
+    for (let month = 0; month < totalMonths && balance > 0; month += 1) {
+        const annualRate = rateForMonth(month);
+        const monthlyRate = annualRate / 100 / 12;
+        const interest = balance * monthlyRate;
+        totalInterest += interest;
+
+        if (month < graceMonths) continue;
+        if (month === graceMonths || month % 12 === 0) {
+            monthlyPayment = calculateMonthlyPayment(balance, annualRate, (totalMonths - month) / 12);
+        }
+        const principalPayment = Math.min(Math.max(monthlyPayment - interest, 0), balance);
+        balance -= principalPayment;
+    }
+
+    return Math.max(totalInterest, 0);
 }
 
 export function calculateRemainingBalance(principal, annualRate, monthlyAmount, paidMonths) {

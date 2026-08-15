@@ -2,7 +2,6 @@ const express = require('express');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
-const User = require('../models/User');
 const auth = require('../middleware/auth');
 const sendError = require('../utils/httpError');
 const { DOCUMENT_TYPES, DOCUMENT_TYPE_VALUES } = require('../constants/documentTypes');
@@ -70,18 +69,6 @@ router.post('/document', auth, async (req, res) => {
         return sendError(res, 400, '文件類型不正確');
     }
 
-    let userName = '';
-    if (req.user && req.user.id) {
-        try {
-            const user = await User.findById(req.user.id).select('name');
-            if (user) {
-                userName = user.name;
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
     const timestamp = formatTimestamp(new Date());
     const pdfFontPath = resolvePdfFontPath();
 
@@ -114,11 +101,6 @@ router.post('/document', auth, async (req, res) => {
 
     doc.fontSize(18).text(title, { align: 'center' });
     doc.moveDown();
-
-    if (userName) {
-        doc.fontSize(12).text(`立文件人：${userName}`, { align: 'left' });
-        doc.moveDown();
-    }
 
     doc.fontSize(12).text(content, {
         align: 'left',
