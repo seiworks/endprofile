@@ -32,3 +32,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+docs/ai/
+docs/generate_word_templates.py
+docs/joint-purchase-template.md
+docs/will-template.md
+docs/*.docx
