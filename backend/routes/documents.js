@@ -53,6 +53,7 @@ router.get('/:id', auth, async (req, res) => {
         }
         return res.json(doc);
     } catch (err) {
+        if (err.name === 'CastError') return sendError(res, 400, '文件 ID 格式不正確');
         console.error(err);
     return sendError(res, 500, '取得文件失敗');
     }
@@ -66,7 +67,7 @@ router.post('/', auth, async (req, res) => {
       return sendError(res, 400, '文件類型不正確');
         }
 
-        if (!payload.title || typeof payload.title !== 'string' || payload.title.trim().length > MAX_TITLE_LENGTH) {
+        if (!payload.title || typeof payload.title !== 'string' || !payload.title.trim() || payload.title.trim().length > MAX_TITLE_LENGTH) {
       return sendError(res, 400, '缺少文件標題');
         }
 
@@ -115,6 +116,7 @@ router.post('/:id/migrate', auth, async (req, res) => {
         if (!doc) return sendError(res, 409, '文件已完成密文轉換');
         return res.json(doc);
     } catch (err) {
+        if (err.name === 'CastError') return sendError(res, 400, '文件 ID 格式不正確');
         console.error(err);
         return sendError(res, 500, '轉換舊文件失敗');
     }
@@ -132,7 +134,7 @@ router.patch('/:id', auth, async (req, res) => {
         }
 
         if (hasOwn(update, 'title')) {
-            if (!update.title || typeof update.title !== 'string' || update.title.trim().length > MAX_TITLE_LENGTH) {
+            if (!update.title || typeof update.title !== 'string' || !update.title.trim() || update.title.trim().length > MAX_TITLE_LENGTH) {
         return sendError(res, 400, '文件標題不正確');
             }
             update.title = update.title.trim();
@@ -154,20 +156,20 @@ router.patch('/:id', auth, async (req, res) => {
       return sendError(res, 400, '沒有可更新的欄位');
         }
 
+        const existing = await Document.findOne({ _id: req.params.id, userId: req.user.id })
+            .select('encryptedPayload');
+        if (!existing) return sendError(res, 404, '找不到文件');
+        if (existing.encryptedPayload) return sendError(res, 409, '文件含有未轉換的密文，請先使用轉換功能');
+
         const doc = await Document.findOneAndUpdate(
             { _id: req.params.id, userId: req.user.id },
-            {
-                $set: update,
-                $unset: { encryptedPayload: 1 },
-                $inc: { version: 1 },
-            },
+            { $set: update, $inc: { version: 1 } },
             { new: true }
         );
-        if (!doc) {
-      return sendError(res, 404, '找不到文件');
-        }
+        if (!doc) return sendError(res, 404, '找不到文件');
         return res.json(doc);
     } catch (err) {
+        if (err.name === 'CastError') return sendError(res, 400, '文件 ID 格式不正確');
         console.error(err);
     return sendError(res, 500, '更新文件失敗');
     }

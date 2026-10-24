@@ -45,9 +45,10 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
     const lastSavedAt = ref('');
     const documentId = ref('');
     const showFloatingSave = ref(false);
+    // 'loading' | 'ready' | 'load-error' | 'locked'
+    const loadStatus = ref('loading');
     let idleSaveTimer = null;
     let lastSavedSnapshot = '';
-    let loadComplete = false;
     let loadPromise = null;
     let savePromise = null;
 
@@ -58,7 +59,14 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         draftText: previewText.value,
     });
 
-    const isDirty = () => loadComplete && currentSnapshot() !== lastSavedSnapshot;
+    const isDirty = () => loadStatus.value === 'ready' && currentSnapshot() !== lastSavedSnapshot;
+
+    const handleBeforeUnload = (event) => {
+        if (isDirty()) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    };
 
     const clearIdleSaveTimer = () => {
         if (idleSaveTimer) window.clearTimeout(idleSaveTimer);
@@ -86,8 +94,13 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
 
     async function onSaveDraft() {
         if (loadPromise) await loadPromise;
+        if (loadStatus.value !== 'ready') return false;
         if (!isDirty()) return true;
-        if (savePromise) return savePromise;
+        if (savePromise) {
+            // Wait for in-flight save then re-evaluate — captures changes made during flight
+            await savePromise;
+            return onSaveDraft();
+        }
 
         savePromise = (async () => {
             saving.value = true;
@@ -117,7 +130,13 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
                 return true;
             } catch (e) {
                 console.error(e);
-                error.value = '儲存失敗，已暫停切換頁面，請稍後再試。';
+                if (e.response && e.response.status === 401) {
+                    error.value = 'Session 已過期，請重新登入後再儲存。';
+                } else if (e.response && e.response.status === 409) {
+                    error.value = '文件含有未轉換的舊密文，請重新整理頁面後再儲存。';
+                } else {
+                    error.value = '儲存失敗，已暫停切換頁面，請稍後再試。';
+                }
                 return false;
             } finally {
                 saving.value = false;
@@ -128,37 +147,77 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
     }
 
     async function loadDraft() {
+        loadStatus.value = 'loading';
         try {
             const response = await axios.get('/api/documents');
             const docs = Array.isArray(response.data) ? response.data : [];
             const doc = docs.find((item) => item.type === type);
             if (!doc) {
+                loadStatus.value = 'ready';
                 return;
             }
             const detailResponse = await axios.get(`/api/documents/${doc._id}`);
             const detail = detailResponse.data || doc;
-            documentId.value = detail._id;
             if (detail.updatedAt) {
                 lastSavedAt.value = detail.updatedAt;
             }
             if (detail.encryptedPayload) {
-                const decrypted = await decryptPayload(detail.encryptedPayload);
-                applyStructuredData(form, decrypted.structuredData);
+                let decrypted;
+                try {
+                    decrypted = await decryptPayload(detail.encryptedPayload);
+                } catch (decryptErr) {
+                    console.error(decryptErr);
+                    loadStatus.value = 'locked';
+                    return;
+                }
+                // Migrate to plaintext before editing; PATCH rejects documents that still hold ciphertext
+                let migrated;
+                try {
+                    const migrateResponse = await axios.post(`/api/documents/${detail._id}/migrate`, {
+                        structuredData: decrypted.structuredData || {},
+                        draftText: decrypted.draftText || '',
+                    });
+                    migrated = migrateResponse.data;
+                } catch (migrateErr) {
+                    // 409: already migrated elsewhere (e.g. by login), so use the server copy
+                    if (!migrateErr.response || migrateErr.response.status !== 409) throw migrateErr;
+                    const refreshed = await axios.get(`/api/documents/${detail._id}`);
+                    migrated = refreshed.data;
+                }
+                if (!migrated || migrated.encryptedPayload) throw new Error('Legacy document migration incomplete');
+                // Set documentId only after successful decryption and migration
+                documentId.value = detail._id;
+                if (migrated.updatedAt) lastSavedAt.value = migrated.updatedAt;
+                applyStructuredData(form, migrated.structuredData);
             } else {
+                documentId.value = detail._id;
                 applyStructuredData(form, detail.structuredData);
             }
+            loadStatus.value = 'ready';
         } catch (e) {
             console.error(e);
+            loadStatus.value = 'load-error';
         } finally {
             lastSavedSnapshot = currentSnapshot();
-            loadComplete = true;
             if (afterLoad) {
                 afterLoad();
             }
         }
     }
 
+    function reloadDraft() {
+        documentId.value = '';
+        lastSavedAt.value = '';
+        error.value = '';
+        loadPromise = loadDraft();
+        return loadPromise;
+    }
+
     async function onDownload() {
+        if (loadStatus.value !== 'ready') {
+            error.value = '文件尚未載入完成，無法下載。';
+            return;
+        }
         downloading.value = true;
         error.value = '';
         try {
@@ -174,6 +233,7 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
     onMounted(() => {
         if (typeof window !== 'undefined') {
             activityEvents.forEach((event) => window.addEventListener(event, handleActivity, { passive: true }));
+            window.addEventListener('beforeunload', handleBeforeUnload);
             handleActivity();
         }
         loadPromise = loadDraft();
@@ -189,6 +249,7 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         if (typeof window !== 'undefined') {
             clearIdleSaveTimer();
             activityEvents.forEach((event) => window.removeEventListener(event, handleActivity));
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         }
     });
 
@@ -199,8 +260,10 @@ export function useDocumentDraft({ type, title, form, previewText, afterLoad }) 
         lastSavedAt,
         lastSavedText,
         loadDraft,
+        loadStatus,
         onDownload,
         onSaveDraft,
+        reloadDraft,
         saving,
         showFloatingSave,
     };

@@ -115,3 +115,7 @@ npm run verify
 - 建議啟用 FileVault／BitLocker，並妥善保管 MongoDB 備份與下載的 PDF。
 
 詳見 [SECURITY.md](SECURITY.md)。
+
+## Optimization proposal
+
+系統現況、優化優先順序、實作拆分與驗收條件見 [系統優化規格](docs/system-optimization-spec.md)；內容為提案，尚未實作。

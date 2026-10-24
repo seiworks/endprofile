@@ -2,7 +2,7 @@
     <div class="wizard-container text-light">
         <teleport to="body">
             <button v-if="showFloatingSave" type="button" class="save-button-position btn highlight-action-button"
-                :disabled="saving" @click="onSaveDraft">
+                :disabled="saving || loadStatus !== 'ready'" @click="onSaveDraft">
                 <span v-if="saving">儲存中…</span>
                 <span v-else>儲存</span>
             </button>
@@ -17,13 +17,13 @@
                     上次編輯：{{ lastSavedText }}
                 </p>
                 <div class="wizard-action-buttons">
-                    <button type="button" class="btn btn-outline-light btn-sm me-2" :disabled="saving"
+                    <button type="button" class="btn btn-outline-light btn-sm me-2" :disabled="saving || loadStatus !== 'ready'"
                         @click="onSaveDraft">
                         <span v-if="saving">儲存中…</span>
                         <span v-else>儲存</span>
                     </button>
                     <button type="button" class="btn btn-outline-light btn-sm pdf-icon-btn" @click="onDownload"
-                        :disabled="downloading" title="下載 PDF 範例">
+                        :disabled="downloading || loadStatus !== 'ready'" title="下載 PDF 範例">
                         <span v-if="downloading">產生中…</span>
                         <span v-else>
                             PDF
@@ -31,9 +31,12 @@
                         </span>
                     </button>
                 </div>
-                <div v-if="error" class="wizard-action-error mt-2" role="alert">
-                    <i class="mdi mdi-alert-circle-outline" aria-hidden="true"></i>
-                    <span>{{ error }}</span>
+                <div v-if="loadStatus !== 'ready' || error" class="wizard-action-error mt-2" role="alert">
+                    <i v-if="loadStatus !== 'loading'" class="mdi mdi-alert-circle-outline" aria-hidden="true"></i>
+                    <span v-if="loadStatus === 'loading'">載入中…</span>
+                    <span v-else-if="loadStatus === 'load-error'">載入失敗，請<router-link to="/">返回首頁</router-link>或<button type="button" class="btn btn-link p-0 align-baseline" @click="reloadDraft">重試</button>。</span>
+                    <span v-else-if="loadStatus === 'locked'">密文解密失敗，請<router-link to="/">返回首頁</router-link>重新登入並使用原密碼解鎖。</span>
+                    <span v-else>{{ error }}</span>
                 </div>
             </div>
         </div>
@@ -239,8 +242,10 @@ const {
     downloading,
     error,
     lastSavedText,
+    loadStatus,
     onDownload,
     onSaveDraft,
+    reloadDraft,
     saving,
     showFloatingSave,
 } = useDocumentDraft({
